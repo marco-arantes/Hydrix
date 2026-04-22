@@ -1,0 +1,29 @@
+{
+  "type": "FeatureCollection",
+  "name": "UGRHI_4_Bacia_do_Pardo_Placeholder",
+  "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "Nome": "UGRHI-4 Bacia do Pardo (Aproximado/Placeholder)",
+        "Nota": "Substitua este arquivo pelo Shapefile ou GeoJSON oficial da UGRHI-4 obtido no site do DataGEO ou SIGRH-SP."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-47.9, -20.3],
+            [-47.3, -20.2],
+            [-46.7, -20.9],
+            [-46.8, -21.7],
+            [-47.5, -21.8],
+            [-48.1, -21.4],
+            [-48.2, -20.8],
+            [-47.9, -20.3]
+          ]
+        ]
+      }
+    }
+  ]
+}
