@@ -28,7 +28,6 @@ function App() {
   };
 
   const handleSaveEvent = (newEvent: MarkerEvent) => {
-    console.log('Desenvolvendo')
     setMarkers([...markers, newEvent]);
     setModalState(null);
   };
