@@ -24,7 +24,6 @@ function App() {
   const [selectedMunicipality, setSelectedMunicipality] = useState<string | null>(null);
 
   const handleMapClick = (lat: number, lng: number) => {
-    console.log('teste')
     setModalState({ isOpen: true, lat, lng });
   };
 
