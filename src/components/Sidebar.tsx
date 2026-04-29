@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { FilterState, MarkerEvent } from '../types';
-import { Filter, MapPin, Info, Search, Users, Maximize, Hash, DollarSign, Activity, Droplets, Globe } from 'lucide-react';
+import { Filter, MapPin, Info, Users, Maximize, Hash, DollarSign, Activity, Globe } from 'lucide-react';
 import { getIbgeDataByMunicipalityName, getIbgeMunicipalityStats, getPrefeituraUrl, type IBGEMunicipio, type IBGEStats } from '../utils/ibge';
 
 interface SidebarProps {
