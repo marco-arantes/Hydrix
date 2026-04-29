@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { X, Plus } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import type { MarkerEvent } from '../types';
-import { fetchMunicipality } from '../utils/reverseGeocode';
+import { fetchMunicipality, geocodeMunicipality } from '../utils/reverseGeocode';
 
 interface EventModalProps {
-  lat: number;
-  lng: number;
+  lat?: number;
+  lng?: number;
   onClose: () => void;
   onSave: (event: MarkerEvent) => void;
   availableTypes: string[];
@@ -31,10 +31,13 @@ export const EventModal: React.FC<EventModalProps> = ({
   
   const [isCreatingType, setIsCreatingType] = useState(false);
   const [newTypeName, setNewTypeName] = useState('');
-  const [isLoadingMunicipality, setIsLoadingMunicipality] = useState(true);
+  const [isLoadingMunicipality, setIsLoadingMunicipality] = useState(lat !== undefined && lng !== undefined);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Auto-fetch municipality based on Geolocation
+  // Auto-fetch municipality based on Geolocation if lat/lng are provided
   useEffect(() => {
+    if (lat === undefined || lng === undefined) return;
+    
     let active = true;
     const getMun = async () => {
       setIsLoadingMunicipality(true);
@@ -48,11 +51,32 @@ export const EventModal: React.FC<EventModalProps> = ({
     return () => { active = false; };
   }, [lat, lng]);
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!type) {
       alert("Por favor, selecione ou crie um tipo de evento.");
       return;
+    }
+    
+    let finalLat = lat;
+    let finalLng = lng;
+
+    if (finalLat === undefined || finalLng === undefined) {
+      if (!municipality.trim()) {
+        alert("Por favor, informe o município.");
+        return;
+      }
+      setIsSaving(true);
+      const coords = await geocodeMunicipality(municipality);
+      setIsSaving(false);
+      
+      if (coords) {
+        finalLat = coords.lat;
+        finalLng = coords.lng;
+      } else {
+        alert("Não foi possível encontrar o município no mapa. Tente digitar o nome completo.");
+        return;
+      }
     }
     
     onSave({
@@ -62,8 +86,8 @@ export const EventModal: React.FC<EventModalProps> = ({
       time,
       observation,
       municipality,
-      lat,
-      lng
+      lat: finalLat,
+      lng: finalLng
     });
   };
 
@@ -138,7 +162,7 @@ export const EventModal: React.FC<EventModalProps> = ({
               )}
             </div>
 
-            <div style={{ display: 'flex', gap: '1rem' }}>
+            <div className="date-time-row">
               <div className="form-group" style={{ flex: 1 }}>
                 <label>Data</label>
                 <input 
@@ -183,8 +207,10 @@ export const EventModal: React.FC<EventModalProps> = ({
           </div>
 
           <div className="modal-footer">
-            <button type="button" className="btn-outline" onClick={onClose}>Cancelar</button>
-            <button type="submit" className="btn-primary">Salvar Evento</button>
+            <button type="button" className="btn-outline" onClick={onClose} disabled={isSaving}>Cancelar</button>
+            <button type="submit" className="btn-primary" disabled={isSaving}>
+              {isSaving ? 'Buscando Localização...' : 'Salvar Evento'}
+            </button>
           </div>
         </form>
       </div>

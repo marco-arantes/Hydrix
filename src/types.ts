@@ -11,8 +11,20 @@ export interface MarkerEvent {
 
 export interface FilterState {
   municipality: string;
+  eventType: string;
   startDate: string;
   endDate: string;
 }
 
-export const INITIAL_TYPES = ['Alagamento', 'Falta de água'];
+export const INITIAL_TYPES = [
+  'Afundamento do pavimento',
+  'Alagamento',
+  'Cheia',
+  'Deslizamento',
+  'Enxurrada',
+  'Estiagem',
+  'Falta de água',
+  'Inundação',
+  'Queda de ponte',
+  'Seca'
+];

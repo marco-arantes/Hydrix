@@ -28,3 +28,30 @@ export async function fetchMunicipality(lat: number, lng: number): Promise<strin
     return '';
   }
 }
+
+export async function geocodeMunicipality(municipality: string): Promise<{lat: number, lng: number} | null> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(municipality)}&country=Brazil&format=json&limit=1`;
+    const response = await fetch(url, {
+      headers: {
+        'Accept-Language': 'pt-BR,pt;q=0.9',
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Forward geocoding failed');
+    }
+
+    const data = await response.json();
+    if (data && data.length > 0) {
+      return {
+        lat: parseFloat(data[0].lat),
+        lng: parseFloat(data[0].lon)
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error('Error geocoding municipality:', error);
+    return null;
+  }
+}

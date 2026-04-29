@@ -13,12 +13,15 @@ function App() {
 
   const [filter, setFilter] = useState<FilterState>({
     municipality: '',
+    eventType: '',
     startDate: '',
     endDate: ''
   });
 
-  const [modalState, setModalState] = useState<{ isOpen: boolean, lat: number, lng: number } | null>(null);
+  const [modalState, setModalState] = useState<{ isOpen: boolean, lat?: number, lng?: number } | null>(null);
   const [showUgrhi4, setShowUgrhi4] = useLocalStorage<boolean>('show-ugrhi4', false);
+  const [isInsertMode, setIsInsertMode] = useLocalStorage<boolean>('is-insert-mode', true);
+  const [selectedMunicipality, setSelectedMunicipality] = useState<string | null>(null);
 
   const handleMapClick = (lat: number, lng: number) => {
     setModalState({ isOpen: true, lat, lng });
@@ -42,6 +45,10 @@ function App() {
       if (filter.municipality && marker.municipality !== filter.municipality) {
         return false;
       }
+      // Filter by event type
+      if (filter.eventType && marker.type !== filter.eventType) {
+        return false;
+      }
       // Filter by date range
       if (filter.startDate && marker.date < filter.startDate) {
         return false;
@@ -59,14 +66,21 @@ function App() {
         filter={filter}
         setFilter={setFilter}
         markers={markers}
+        availableTypes={availableTypes}
         showUgrhi4={showUgrhi4}
         setShowUgrhi4={setShowUgrhi4}
+        isInsertMode={isInsertMode}
+        setIsInsertMode={setIsInsertMode}
+        selectedMunicipality={selectedMunicipality}
       />
 
       <MapArea
         markers={filteredMarkers}
         onMapClick={handleMapClick}
         showUgrhi4={showUgrhi4}
+        isInsertMode={isInsertMode}
+        selectedMunicipality={selectedMunicipality}
+        setSelectedMunicipality={setSelectedMunicipality}
       />
 
       {modalState?.isOpen && (

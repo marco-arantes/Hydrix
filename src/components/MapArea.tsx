@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, GeoJSON } from 'react-leaflet';
 import L from 'leaflet';
 import type { MarkerEvent } from '../types';
+import { fetchMunicipality } from '../utils/reverseGeocode';
 
 // Fix for leaflet internal icon missing issues in some environments
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -20,6 +21,9 @@ interface MapAreaProps {
   markers: MarkerEvent[];
   onMapClick: (lat: number, lng: number) => void;
   showUgrhi4: boolean;
+  isInsertMode: boolean;
+  selectedMunicipality: string | null;
+  setSelectedMunicipality: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 const MapEvents: React.FC<{ onMapClick: (lat: number, lng: number) => void }> = ({ onMapClick }) => {
@@ -31,10 +35,10 @@ const MapEvents: React.FC<{ onMapClick: (lat: number, lng: number) => void }> = 
   return null;
 };
 
-export const MapArea: React.FC<MapAreaProps> = ({ markers, onMapClick, showUgrhi4 }) => {
-  // Center of Brazil roughly
-  const defaultCenter: [number, number] = [-14.235, -51.925];
-  const zoomLevel = 4;
+export const MapArea: React.FC<MapAreaProps> = ({ markers, onMapClick, showUgrhi4, isInsertMode, selectedMunicipality, setSelectedMunicipality }) => {
+  // Centro aproximado da Bacia do Pardo (UGRHI-4), perto de Ribeirão Preto
+  const defaultCenter: [number, number] = [-21.1, -47.8];
+  const zoomLevel = 8;
 
   const fetched = useRef(new Set<string>());
   const [boundaries, setBoundaries] = useState<Record<string, any>>({});
@@ -96,12 +100,42 @@ export const MapArea: React.FC<MapAreaProps> = ({ markers, onMapClick, showUgrhi
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <MapEvents onMapClick={onMapClick} />
+        <MapEvents onMapClick={async (lat, lng) => {
+          setSelectedMunicipality(null);
+          
+          if (isInsertMode) {
+            onMapClick(lat, lng);
+          } else {
+            // Modo de visualização: buscar o município clicado e seu contorno
+            const munName = await fetchMunicipality(lat, lng);
+            if (munName) {
+              setSelectedMunicipality(munName);
+              
+              // Se ainda não temos o contorno em cache, buscamos
+              if (!boundaries[munName]) {
+                try {
+                  const url = `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(munName)}&country=Brazil&format=json&polygon_geojson=1`;
+                  const res = await fetch(url, { headers: { 'Accept-Language': 'pt-BR,pt;q=0.9' } });
+                  const data = await res.json();
 
-        {Object.entries(boundaries).map(([mun, geojson]) => (
+                  if (data && data.length > 0 && data[0].geojson) {
+                    setBoundaries(prev => ({
+                      ...prev,
+                      [munName]: data[0].geojson
+                    }));
+                  }
+                } catch (e) {
+                  console.error("Error fetching boundary on click for", munName, e);
+                }
+              }
+            }
+          }
+        }} />
+
+        {selectedMunicipality && boundaries[selectedMunicipality] && (
           <GeoJSON 
-            key={`boundary-${mun}`} 
-            data={geojson} 
+            key={`boundary-${selectedMunicipality}`} 
+            data={boundaries[selectedMunicipality]} 
             style={{
               color: 'var(--primary-color)',
               weight: 2,
@@ -110,7 +144,7 @@ export const MapArea: React.FC<MapAreaProps> = ({ markers, onMapClick, showUgrhi
               fillOpacity: 0.1
             }}
           />
-        ))}
+        )}
 
         {showUgrhi4 && ugrhiGeoJson && (
           <GeoJSON 
@@ -127,8 +161,18 @@ export const MapArea: React.FC<MapAreaProps> = ({ markers, onMapClick, showUgrhi
         )}
         
         {markers.map((marker) => (
-          <Marker key={marker.id} position={[marker.lat, marker.lng]}>
-            <Popup>
+          <Marker 
+            key={marker.id} 
+            position={[marker.lat, marker.lng]}
+            eventHandlers={{
+              click: () => setSelectedMunicipality(marker.municipality)
+            }}
+          >
+            <Popup
+              eventHandlers={{
+                remove: () => setSelectedMunicipality(null)
+              }}
+            >
               <div style={{ padding: '4px' }}>
                 <h3 style={{ margin: '0 0 8px 0', fontSize: '1rem', color: 'var(--primary-color)' }}>
                   {marker.type}
