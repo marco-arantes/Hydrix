@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import type { FilterState, MarkerEvent } from '../types';
 import { Filter, MapPin } from 'lucide-react';
 
@@ -15,7 +15,7 @@ interface SidebarProps {
   setSelectedMunicipality: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ filter, setFilter, markers, availableTypes, showUgrhi4, setShowUgrhi4, isInsertMode, setIsInsertMode, selectedMunicipality, setSelectedMunicipality }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ filter, setFilter, markers, availableTypes, showUgrhi4, setShowUgrhi4, isInsertMode, setIsInsertMode, setSelectedMunicipality }) => {
   // Extract unique municipalities from the available events
   const uniqueMunicipalities = Array.from(new Set(markers.map(m => m.municipality).filter(Boolean))).sort();
 
@@ -86,7 +86,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ filter, setFilter, markers, av
         <div className="filter-group">
           <label htmlFor="endDate">Data Final</label>
           <div>
-             <input
+            <input
               type="date"
               id="endDate"
               value={filter.endDate}
@@ -97,8 +97,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ filter, setFilter, markers, av
 
         <div className="filter-group" style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#f1f5f9', borderRadius: 'var(--radius-md)' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', color: 'var(--text-primary)', fontWeight: 600 }}>
-            <input 
-              type="checkbox" 
+            <input
+              type="checkbox"
               checked={showUgrhi4}
               onChange={(e) => setShowUgrhi4(e.target.checked)}
               style={{ width: 'auto' }}
@@ -110,8 +110,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ filter, setFilter, markers, av
           </p>
 
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', color: 'var(--text-primary)', fontWeight: 600, marginTop: '1rem' }}>
-            <input 
-              type="checkbox" 
+            <input
+              type="checkbox"
               checked={isInsertMode}
               onChange={(e) => setIsInsertMode(e.target.checked)}
               style={{ width: 'auto' }}
@@ -124,10 +124,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ filter, setFilter, markers, av
         </div>
 
 
-        
+
         <div style={{ marginTop: 'auto', paddingTop: '20px', borderTop: '1px solid var(--border-color)' }}>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-            {isInsertMode 
+            {isInsertMode
               ? "Clique em qualquer lugar no mapa para adicionar um novo registro de evento crítico."
               : "Clique em qualquer lugar no mapa para ver o contorno daquele município."}
           </p>
