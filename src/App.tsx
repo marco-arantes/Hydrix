@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Sidebar } from './components/Sidebar';
+import { RightSidebar } from './components/RightSidebar';
 import { MapArea } from './components/MapArea';
 import { EventModal } from './components/EventModal';
 import { useLocalStorage } from './hooks/useLocalStorage';
@@ -72,6 +73,7 @@ function App() {
         isInsertMode={isInsertMode}
         setIsInsertMode={setIsInsertMode}
         selectedMunicipality={selectedMunicipality}
+        setSelectedMunicipality={setSelectedMunicipality}
       />
 
       <MapArea
@@ -82,6 +84,8 @@ function App() {
         selectedMunicipality={selectedMunicipality}
         setSelectedMunicipality={setSelectedMunicipality}
       />
+
+      <RightSidebar selectedMunicipality={selectedMunicipality} />
 
       {modalState?.isOpen && (
         <EventModal

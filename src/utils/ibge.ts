@@ -20,6 +20,7 @@ export interface IBGEMunicipio {
 export interface IBGEStats {
   codigo: number;
   populacao?: { valor: string; ano: string };
+  populacaoEstimada?: { valor: string; ano: string };
   area?: { valor: string; ano: string };
   densidade?: { valor: string; ano: string };
   pibPerCapita?: { valor: string; ano: string };
@@ -71,8 +72,8 @@ export async function getIbgeMunicipalityStats(id: number): Promise<IBGEStats> {
   const stats: IBGEStats = { codigo: id };
 
   try {
-    // 29171: População, 29168: Área, 47001: PIB per capita, 60030: Esgotamento, 60045: Urbanização, 60029: Arborização, 8418: Área urbanizada, 7786: Bioma
-    const url = `https://servicodados.ibge.gov.br/api/v1/pesquisas/indicadores/29171|29168|47001|60030|60045|60029|8418|7786/resultados/${id}`;
+    // 96385: População (2022), 29171: População estimada, 96414: Área territorial (2022), 96386: Densidade demográfica (2022), 47001: PIB per capita, 60030: Esgotamento, 60031: Urbanização, 60029: Arborização, 95335: Área urbanizada, 77861: Bioma
+    const url = `https://servicodados.ibge.gov.br/api/v1/pesquisas/indicadores/96385|29171|96414|96386|47001|60030|60031|60029|95335|77861/resultados/${id}`;
     const res = await fetch(url);
 
     if (res.ok) {
@@ -92,11 +93,18 @@ export async function getIbgeMunicipalityStats(id: number): Promise<IBGEStats> {
         const valorMaisRecente = resLocal[anos[0]];
 
         switch (indicador.id) {
-          case 29171: // População
+          case 96385: // População residente
             stats.populacao = { valor: parseInt(valorMaisRecente).toLocaleString('pt-BR'), ano: anos[0] };
             break;
+          case 29171: // População estimada
+            stats.populacaoEstimada = { valor: parseInt(valorMaisRecente).toLocaleString('pt-BR'), ano: anos[0] };
+            break;
+          case 96414:
           case 29168: // Área
             stats.area = { valor: parseFloat(valorMaisRecente).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 3 }), ano: anos[0] };
+            break;
+          case 96386: // Densidade Demográfica
+            stats.densidade = { valor: parseFloat(valorMaisRecente).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), ano: anos[0] };
             break;
           case 47001: // PIB per Capita
             stats.pibPerCapita = { valor: parseFloat(valorMaisRecente).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), ano: anos[0] };
@@ -104,23 +112,26 @@ export async function getIbgeMunicipalityStats(id: number): Promise<IBGEStats> {
           case 60030: // Esgotamento sanitário adequado
             stats.esgotamentoSanitario = { valor: `${parseFloat(valorMaisRecente).toLocaleString('pt-BR')}%`, ano: anos[0] };
             break;
+          case 60031:
           case 60045: // Urbanização de vias públicas
             stats.urbanizacao = { valor: `${parseFloat(valorMaisRecente).toLocaleString('pt-BR')}%`, ano: anos[0] };
             break;
           case 60029: // Arborização de vias públicas
             stats.arborizacao = { valor: `${parseFloat(valorMaisRecente).toLocaleString('pt-BR')}%`, ano: anos[0] };
             break;
+          case 95335:
           case 8418: // Área urbanizada
             stats.areaUrbanizada = { valor: `${parseFloat(valorMaisRecente).toLocaleString('pt-BR')} km²`, ano: anos[0] };
             break;
+          case 77861:
           case 7786: // Bioma predominante
-            stats.bioma = { valor: valorMaisRecente.toString(), ano: anos[0] };
+            stats.bioma = { valor: valorMaisRecente.toString().replace(/;/g, ', '), ano: anos[0] };
             break;
         }
       });
 
-      // Calcular densidade se tiver população e área
-      if (stats.populacao && stats.area) {
+      // Calcular densidade se tiver população e área (fallback caso o indicador 96386 não retorne)
+      if (!stats.densidade && stats.populacao && stats.area) {
         const popInt = parseInt(stats.populacao.valor.replace(/\./g, ''));
         const areaFloat = parseFloat(stats.area.valor.replace(/\./g, '').replace(',', '.'));
         if (areaFloat > 0) {

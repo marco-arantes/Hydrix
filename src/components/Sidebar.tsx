@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { FilterState, MarkerEvent } from '../types';
-import { Filter, MapPin, Info, Users, Maximize, Hash, DollarSign, Activity, Globe } from 'lucide-react';
-import { getIbgeDataByMunicipalityName, getIbgeMunicipalityStats, getPrefeituraUrl, type IBGEMunicipio, type IBGEStats } from '../utils/ibge';
+import { Filter, MapPin } from 'lucide-react';
 
 interface SidebarProps {
   filter: FilterState;
@@ -13,35 +12,10 @@ interface SidebarProps {
   isInsertMode: boolean;
   setIsInsertMode: React.Dispatch<React.SetStateAction<boolean>>;
   selectedMunicipality: string | null;
+  setSelectedMunicipality: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ filter, setFilter, markers, availableTypes, showUgrhi4, setShowUgrhi4, isInsertMode, setIsInsertMode, selectedMunicipality }) => {
-  const [ibgeData, setIbgeData] = useState<IBGEMunicipio | null>(null);
-  const [ibgeStats, setIbgeStats] = useState<IBGEStats | null>(null);
-  const [loadingIbge, setLoadingIbge] = useState<boolean>(false);
-
-  // Fetch IBGE data when a municipality is selected
-  useEffect(() => {
-    if (selectedMunicipality) {
-      setLoadingIbge(true);
-      setIbgeStats(null);
-      getIbgeDataByMunicipalityName(selectedMunicipality).then(data => {
-        setIbgeData(data);
-        if (data) {
-          getIbgeMunicipalityStats(data.id).then(stats => {
-            setIbgeStats(stats);
-            setLoadingIbge(false);
-          });
-        } else {
-          setLoadingIbge(false);
-        }
-      });
-    } else {
-      setIbgeData(null);
-      setIbgeStats(null);
-    }
-  }, [selectedMunicipality]);
-
+export const Sidebar: React.FC<SidebarProps> = ({ filter, setFilter, markers, availableTypes, showUgrhi4, setShowUgrhi4, isInsertMode, setIsInsertMode, selectedMunicipality, setSelectedMunicipality }) => {
   // Extract unique municipalities from the available events
   const uniqueMunicipalities = Array.from(new Set(markers.map(m => m.municipality).filter(Boolean))).sort();
 
@@ -67,7 +41,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ filter, setFilter, markers, av
           <select
             id="municipalityFilter"
             value={filter.municipality}
-            onChange={(e) => setFilter({ ...filter, municipality: e.target.value })}
+            onChange={(e) => {
+              setFilter({ ...filter, municipality: e.target.value });
+              setSelectedMunicipality(e.target.value || null);
+            }}
           >
             <option value="">Todos os municípios</option>
             {uniqueMunicipalities.map((mun) => (
@@ -146,99 +123,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ filter, setFilter, markers, av
           </p>
         </div>
 
-        {/* Informações do Município Selecionado */}
-        {selectedMunicipality && (
-          <div className="filter-group" style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#e0f2fe', border: '1px solid #bae6fd', borderRadius: 'var(--radius-md)' }}>
-            <h3 style={{ fontSize: '0.875rem', color: '#0284c7', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-              <Info size={16} />
-              Informações do Local
-            </h3>
-            
-            <div style={{ marginBottom: '1rem' }}>
-              <strong style={{ fontSize: '1rem', color: 'var(--text-primary)' }}>{selectedMunicipality}</strong>
-              
-              {loadingIbge ? (
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>Buscando estatísticas oficiais no IBGE...</p>
-              ) : ibgeData ? (
-                <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                    {ibgeData.microrregiao.nome} - {ibgeData.microrregiao.mesorregiao.UF.nome} ({ibgeData.microrregiao.mesorregiao.UF.sigla})
-                  </p>
-                  
-                  {ibgeStats?.codigo && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-primary)', fontSize: '0.875rem' }}>
-                      <Hash size={14} className="text-blue-500" />
-                      <span><strong>Código IBGE:</strong> {ibgeStats.codigo}</span>
-                    </div>
-                  )}
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-primary)', fontSize: '0.875rem' }}>
-                    <Users size={14} className="text-blue-500" />
-                    <span><strong>População{ibgeStats?.populacao ? ` (${ibgeStats.populacao.ano})` : ''}:</strong> {ibgeStats?.populacao ? `${ibgeStats.populacao.valor} hab.` : 'Sem Informação'}</span>
-                  </div>
-                  
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-primary)', fontSize: '0.875rem' }}>
-                    <Maximize size={14} className="text-blue-500" />
-                    <span><strong>Área{ibgeStats?.area ? ` (${ibgeStats.area.ano})` : ''}:</strong> {ibgeStats?.area ? `${ibgeStats.area.valor} km²` : 'Sem Informação'}</span>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-primary)', fontSize: '0.875rem' }}>
-                    <Activity size={14} className="text-blue-500" />
-                    <span><strong>Densidade Dem.{ibgeStats?.densidade ? ` (${ibgeStats.densidade.ano})` : ''}:</strong> {ibgeStats?.densidade ? `${ibgeStats.densidade.valor} hab/km²` : 'Sem Informação'}</span>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-primary)', fontSize: '0.875rem' }}>
-                    <DollarSign size={14} className="text-blue-500" />
-                    <span><strong>PIB per Capita{ibgeStats?.pibPerCapita ? ` (${ibgeStats.pibPerCapita.ano})` : ''}:</strong> {ibgeStats?.pibPerCapita ? ibgeStats.pibPerCapita.valor : 'Sem Informação'}</span>
-                  </div>
-
-                  {/* Subitem Meio Ambiente */}
-                  <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px dashed #bae6fd' }}>
-                    <h4 style={{ fontSize: '0.875rem', color: '#0369a1', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <Globe size={14} />
-                      Meio Ambiente
-                    </h4>
-                    
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-primary)', fontSize: '0.875rem', marginBottom: '4px' }}>
-                      <span><strong>Área urbanizada{ibgeStats?.areaUrbanizada ? ` (${ibgeStats.areaUrbanizada.ano})` : ''}:</strong> {ibgeStats?.areaUrbanizada ? ibgeStats.areaUrbanizada.valor : 'Sem Informação'}</span>
-                    </div>
-                    
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-primary)', fontSize: '0.875rem', marginBottom: '4px' }}>
-                      <span><strong>Esgotamento{ibgeStats?.esgotamentoSanitario ? ` (${ibgeStats.esgotamentoSanitario.ano})` : ''}:</strong> {ibgeStats?.esgotamentoSanitario ? `${ibgeStats.esgotamentoSanitario.valor} adequado` : 'Sem Informação'}</span>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-primary)', fontSize: '0.875rem', marginBottom: '4px' }}>
-                      <span><strong>Arborização{ibgeStats?.arborizacao ? ` (${ibgeStats.arborizacao.ano})` : ''}:</strong> {ibgeStats?.arborizacao ? ibgeStats.arborizacao.valor : 'Sem Informação'}</span>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-primary)', fontSize: '0.875rem', marginBottom: '4px' }}>
-                      <span><strong>Vias Urbanizadas{ibgeStats?.urbanizacao ? ` (${ibgeStats.urbanizacao.ano})` : ''}:</strong> {ibgeStats?.urbanizacao ? ibgeStats.urbanizacao.valor : 'Sem Informação'}</span>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-primary)', fontSize: '0.875rem' }}>
-                      <span><strong>Bioma predominante{ibgeStats?.bioma ? ` (${ibgeStats.bioma.ano})` : ''}:</strong> {ibgeStats?.bioma ? ibgeStats.bioma.valor : 'Sem Informação'}</span>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>Dados do IBGE não encontrados.</p>
-              )}
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <a 
-                href={getPrefeituraUrl(selectedMunicipality, ibgeData?.microrregiao.mesorregiao.UF.sigla || 'SP')} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="btn-primary"
-                style={{ textDecoration: 'none', fontSize: '0.875rem', padding: '0.5rem', justifyContent: 'center' }}
-              >
-                <Globe size={14} />
-                Site do Município
-              </a>
-            </div>
-          </div>
-        )}
         
         <div style={{ marginTop: 'auto', paddingTop: '20px', borderTop: '1px solid var(--border-color)' }}>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>

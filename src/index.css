@@ -120,6 +120,11 @@ input:focus, select:focus, textarea:focus {
   box-shadow: var(--shadow-lg);
 }
 
+.right-sidebar {
+  border-right: none;
+  border-left: 1px solid var(--border-color);
+}
+
 .sidebar-header {
   padding: 1.5rem;
   border-bottom: 1px solid var(--border-color);
