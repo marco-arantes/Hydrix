@@ -24,6 +24,11 @@ function App() {
   const [isInsertMode, setIsInsertMode] = useLocalStorage<boolean>('is-insert-mode', true);
   const [selectedMunicipality, setSelectedMunicipality] = useState<string | null>(null);
 
+  // Map layer controls
+  const [mapLayer, setMapLayer] = useLocalStorage<'osm' | 'satellite'>('map-layer', 'osm');
+  const [showBiomas, setShowBiomas] = useLocalStorage<boolean>('show-biomas', false);
+  const [showVegetation, setShowVegetation] = useLocalStorage<boolean>('show-vegetation', false);
+
   const handleMapClick = (lat: number, lng: number) => {
     setModalState({ isOpen: true, lat, lng });
   };
@@ -37,6 +42,10 @@ function App() {
     if (!availableTypes.includes(newType)) {
       setAvailableTypes([...availableTypes, newType]);
     }
+  };
+
+  const handleDeleteMarker = (id: string) => {
+    setMarkers(markers.filter(marker => marker.id !== id));
   };
 
   // Filter markers based on sidebar state
@@ -74,15 +83,25 @@ function App() {
         setIsInsertMode={setIsInsertMode}
         selectedMunicipality={selectedMunicipality}
         setSelectedMunicipality={setSelectedMunicipality}
+        mapLayer={mapLayer}
+        setMapLayer={setMapLayer}
+        showBiomas={showBiomas}
+        setShowBiomas={setShowBiomas}
+        showVegetation={showVegetation}
+        setShowVegetation={setShowVegetation}
       />
 
       <MapArea
         markers={filteredMarkers}
         onMapClick={handleMapClick}
+        onDeleteMarker={handleDeleteMarker}
         showUgrhi4={showUgrhi4}
         isInsertMode={isInsertMode}
         selectedMunicipality={selectedMunicipality}
         setSelectedMunicipality={setSelectedMunicipality}
+        mapLayer={mapLayer}
+        showBiomas={showBiomas}
+        showVegetation={showVegetation}
       />
 
       <RightSidebar selectedMunicipality={selectedMunicipality} />

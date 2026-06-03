@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents, GeoJSON } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, GeoJSON, LayersControl, WMSTileLayer } from 'react-leaflet';
 import L from 'leaflet';
 import type { MarkerEvent } from '../types';
 import { fetchMunicipality } from '../utils/reverseGeocode';
@@ -24,6 +24,10 @@ interface MapAreaProps {
   isInsertMode: boolean;
   selectedMunicipality: string | null;
   setSelectedMunicipality: React.Dispatch<React.SetStateAction<string | null>>;
+  mapLayer: 'osm' | 'satellite';
+  showBiomas: boolean;
+  showVegetation: boolean;
+  onDeleteMarker?: (id: string) => void;
 }
 
 const MapEvents: React.FC<{ onMapClick: (lat: number, lng: number) => void }> = ({ onMapClick }) => {
@@ -35,7 +39,11 @@ const MapEvents: React.FC<{ onMapClick: (lat: number, lng: number) => void }> = 
   return null;
 };
 
-export const MapArea: React.FC<MapAreaProps> = ({ markers, onMapClick, showUgrhi4, isInsertMode, selectedMunicipality, setSelectedMunicipality }) => {
+export const MapArea: React.FC<MapAreaProps> = ({ 
+  markers, onMapClick, showUgrhi4, isInsertMode, 
+  selectedMunicipality, setSelectedMunicipality,
+  mapLayer, showBiomas, showVegetation, onDeleteMarker
+}) => {
   // Centro aproximado da Bacia do Pardo (UGRHI-4), perto de Ribeirão Preto
   const defaultCenter: [number, number] = [-21.1, -47.8];
   const zoomLevel = 8;
@@ -96,10 +104,45 @@ export const MapArea: React.FC<MapAreaProps> = ({ markers, onMapClick, showUgrhi
         zoom={zoomLevel} 
         style={{ height: '100%', width: '100%' }}
       >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+        {mapLayer === 'osm' ? (
+          <TileLayer
+            key="osm"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+        ) : (
+          <TileLayer
+            key="satellite"
+            attribution='Tiles &copy; Esri'
+            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+          />
+        )}
+
+        {showBiomas && (
+          <WMSTileLayer
+            key="ibge-biomas"
+            url="https://geoservicos.ibge.gov.br/geoserver/ows"
+            layers="CREN:lm_bioma_250"
+            format="image/png"
+            transparent={true}
+            attribution="IBGE / INDE"
+            opacity={0.5}
+            zIndex={10}
+          />
+        )}
+
+        {showVegetation && (
+          <WMSTileLayer
+            key="ibge-vegetation"
+            url="https://geoservicos.ibge.gov.br/geoserver/ows"
+            layers="CREN:vegetacao_area_brasil"
+            format="image/png"
+            transparent={true}
+            attribution="IBGE / INDE"
+            opacity={0.5}
+            zIndex={11}
+          />
+        )}
         <MapEvents onMapClick={async (lat, lng) => {
           setSelectedMunicipality(null);
           
@@ -183,10 +226,26 @@ export const MapArea: React.FC<MapAreaProps> = ({ markers, onMapClick, showUgrhi
                 <p style={{ margin: '4px 0', fontSize: '0.875rem' }}>
                   <strong>Local:</strong> {marker.municipality}
                 </p>
+                <p style={{ margin: '4px 0', fontSize: '0.875rem' }}>
+                  <strong>Coordenadas:</strong> {marker.lat.toFixed(5)}, {marker.lng.toFixed(5)}
+                </p>
                 {marker.observation && (
                   <p style={{ margin: '8px 0 0 0', fontSize: '0.875rem', fontStyle: 'italic', color: 'var(--text-secondary)' }}>
                     "{marker.observation}"
                   </p>
+                )}
+                {onDeleteMarker && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (window.confirm('Tem certeza que deseja excluir este evento?')) {
+                        onDeleteMarker(marker.id);
+                      }
+                    }}
+                    style={{ marginTop: '12px', padding: '6px 10px', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', width: '100%', fontWeight: 600 }}
+                  >
+                    Excluir Evento
+                  </button>
                 )}
               </div>
             </Popup>

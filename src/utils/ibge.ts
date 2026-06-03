@@ -49,14 +49,30 @@ export async function getIbgeDataByMunicipalityName(name: string): Promise<IBGEM
       cachedMunicipios = await response.json();
     }
 
+    // Extrai apenas o nome da cidade caso venha no formato "Cidade - UF" ou "Cidade, Estado"
+    let cleanName = name.split('-')[0].split(',')[0].trim();
+    
     // Procura o município (ignorando diferenças de maiúsculas/minúsculas)
-    // Se quiser ignorar acentos, podemos adicionar uma função de normalização
-    const normalizedSearch = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const normalizedSearch = cleanName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-    const found = cachedMunicipios?.find(m => {
+    let found = cachedMunicipios?.find(m => {
       const normalizedName = m.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
       return normalizedName === normalizedSearch;
     });
+
+    // Em casos como "Sertãozinho" que existe em SP e PB, se não especificarmos o estado, ele pega o primeiro (PB).
+    // Se a string original continha o estado, podemos tentar usar isso para desempatar:
+    if (name.includes('-') || name.includes(',')) {
+      const parts = name.split(/[-,]/);
+      if (parts.length > 1) {
+        const stateStr = parts[1].trim().toLowerCase();
+        const foundWithState = cachedMunicipios?.find(m => {
+          const normalizedName = m.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+          return normalizedName === normalizedSearch && m.microrregiao.mesorregiao.UF.sigla.toLowerCase() === stateStr;
+        });
+        if (foundWithState) found = foundWithState;
+      }
+    }
 
     return found || null;
   } catch (error) {

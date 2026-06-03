@@ -15,7 +15,18 @@ interface SidebarProps {
   setSelectedMunicipality: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ filter, setFilter, markers, availableTypes, showUgrhi4, setShowUgrhi4, isInsertMode, setIsInsertMode, setSelectedMunicipality }) => {
+export const Sidebar: React.FC<SidebarProps & {
+  mapLayer: 'osm' | 'satellite';
+  setMapLayer: React.Dispatch<React.SetStateAction<'osm' | 'satellite'>>;
+  showBiomas: boolean;
+  setShowBiomas: React.Dispatch<React.SetStateAction<boolean>>;
+  showVegetation: boolean;
+  setShowVegetation: React.Dispatch<React.SetStateAction<boolean>>;
+}> = ({ 
+  filter, setFilter, markers, availableTypes, showUgrhi4, setShowUgrhi4, 
+  isInsertMode, setIsInsertMode, selectedMunicipality, setSelectedMunicipality,
+  mapLayer, setMapLayer, showBiomas, setShowBiomas, showVegetation, setShowVegetation
+}) => {
   // Extract unique municipalities from the available events
   const uniqueMunicipalities = Array.from(new Set(markers.map(m => m.municipality).filter(Boolean))).sort();
 
@@ -123,6 +134,55 @@ export const Sidebar: React.FC<SidebarProps> = ({ filter, setFilter, markers, av
           </p>
         </div>
 
+        <div className="filter-group" style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#e0f2fe', borderRadius: 'var(--radius-md)' }}>
+          <label style={{ fontWeight: 600, color: '#0369a1', display: 'block', marginBottom: '0.5rem' }}>Mapa de Fundo</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.875rem' }}>
+              <input
+                type="radio"
+                name="mapLayer"
+                value="osm"
+                checked={mapLayer === 'osm'}
+                onChange={() => setMapLayer('osm')}
+                style={{ width: 'auto' }}
+              />
+              OpenStreetMap (Ruas)
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.875rem' }}>
+              <input
+                type="radio"
+                name="mapLayer"
+                value="satellite"
+                checked={mapLayer === 'satellite'}
+                onChange={() => setMapLayer('satellite')}
+                style={{ width: 'auto' }}
+              />
+              Satélite (Esri)
+            </label>
+          </div>
+
+          <label style={{ fontWeight: 600, color: '#0369a1', display: 'block', marginTop: '1rem', marginBottom: '0.5rem' }}>Camadas IBGE / INDE</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.875rem' }}>
+              <input
+                type="checkbox"
+                checked={showBiomas}
+                onChange={(e) => setShowBiomas(e.target.checked)}
+                style={{ width: 'auto' }}
+              />
+              Biomas
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.875rem' }}>
+              <input
+                type="checkbox"
+                checked={showVegetation}
+                onChange={(e) => setShowVegetation(e.target.checked)}
+                style={{ width: 'auto' }}
+              />
+              Vegetação
+            </label>
+          </div>
+        </div>
 
 
         <div style={{ marginTop: 'auto', paddingTop: '20px', borderTop: '1px solid var(--border-color)' }}>

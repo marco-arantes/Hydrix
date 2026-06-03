@@ -28,6 +28,8 @@ export const EventModal: React.FC<EventModalProps> = ({
   );
   const [observation, setObservation] = useState('');
   const [municipality, setMunicipality] = useState('');
+  const [formLat, setFormLat] = useState(lat !== undefined ? String(lat) : '');
+  const [formLng, setFormLng] = useState(lng !== undefined ? String(lng) : '');
   
   const [isCreatingType, setIsCreatingType] = useState(false);
   const [newTypeName, setNewTypeName] = useState('');
@@ -58,12 +60,12 @@ export const EventModal: React.FC<EventModalProps> = ({
       return;
     }
     
-    let finalLat = lat;
-    let finalLng = lng;
+    let finalLat = parseFloat(formLat);
+    let finalLng = parseFloat(formLng);
 
-    if (finalLat === undefined || finalLng === undefined) {
+    if (isNaN(finalLat) || isNaN(finalLng)) {
       if (!municipality.trim()) {
-        alert("Por favor, informe o município.");
+        alert("Por favor, informe o município ou as coordenadas geográficas.");
         return;
       }
       setIsSaving(true);
@@ -74,7 +76,7 @@ export const EventModal: React.FC<EventModalProps> = ({
         finalLat = coords.lat;
         finalLng = coords.lng;
       } else {
-        alert("Não foi possível encontrar o município no mapa. Tente digitar o nome completo.");
+        alert("Não foi possível encontrar o município no mapa. Tente digitar o nome completo ou insira as coordenadas.");
         return;
       }
     }
@@ -193,6 +195,29 @@ export const EventModal: React.FC<EventModalProps> = ({
                 placeholder={isLoadingMunicipality ? "Buscando localização..." : "Digite o município"}
                 className={isLoadingMunicipality ? "loading-pulse" : ""}
               />
+            </div>
+
+            <div className="date-time-row">
+              <div className="form-group" style={{ flex: 1 }}>
+                <label>Latitude</label>
+                <input 
+                  type="number" 
+                  step="any"
+                  value={formLat} 
+                  onChange={(e) => setFormLat(e.target.value)}
+                  placeholder="Ex: -23.5505"
+                />
+              </div>
+              <div className="form-group" style={{ flex: 1 }}>
+                <label>Longitude</label>
+                <input 
+                  type="number" 
+                  step="any"
+                  value={formLng} 
+                  onChange={(e) => setFormLng(e.target.value)}
+                  placeholder="Ex: -46.6333"
+                />
+              </div>
             </div>
 
             <div className="form-group">
