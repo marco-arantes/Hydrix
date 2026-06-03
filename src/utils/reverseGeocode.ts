@@ -12,7 +12,7 @@ export async function fetchMunicipality(lat: number, lng: number): Promise<strin
     }
 
     const data = await response.json();
-    
+
     // Nominatim typically returns city, town, village, or municipality in the address object.
     const address = data.address;
     if (address) {
@@ -29,7 +29,7 @@ export async function fetchMunicipality(lat: number, lng: number): Promise<strin
   }
 }
 
-export async function geocodeMunicipality(municipality: string): Promise<{lat: number, lng: number} | null> {
+export async function geocodeMunicipality(municipality: string): Promise<{ lat: number, lng: number } | null> {
   try {
     const url = `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(municipality)}&country=Brazil&format=json&limit=1`;
     const response = await fetch(url, {
