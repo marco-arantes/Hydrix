@@ -108,6 +108,15 @@ input:focus, select:focus, textarea:focus {
   height: 100%;
 }
 
+.auth-buttons {
+  position: absolute;
+  top: 15px;
+  right: 340px;
+  z-index: 1000;
+  display: flex;
+  gap: 10px;
+}
+
 .sidebar {
   width: var(--sidebar-width);
   height: 100%;
@@ -286,6 +295,11 @@ input:focus, select:focus, textarea:focus {
 
 /* Responsividade - Celulares e Tablets em pé */
 @media (max-width: 768px) {
+  .auth-buttons {
+    right: 15px;
+    top: 15px;
+  }
+
   .app-container {
     flex-direction: column;
     overflow-y: auto;

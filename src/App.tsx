@@ -1,16 +1,20 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { RightSidebar } from './components/RightSidebar';
 import { MapArea } from './components/MapArea';
 import { EventModal } from './components/EventModal';
 import { useLocalStorage } from './hooks/useLocalStorage';
-import type { MarkerEvent, FilterState } from './types';
-import { INITIAL_TYPES } from './types';
+import type { MarkerEvent, FilterState, UserProfile } from './types';
+import { supabase } from './lib/supabase';
+import { Auth } from './components/Auth';
+import { AdminPanel } from './components/AdminPanel';
+import { LogOut, Settings } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import './index.css';
 
 function App() {
-  const [markers, setMarkers] = useLocalStorage<MarkerEvent[]>('map-events', []);
-  const [availableTypes, setAvailableTypes] = useLocalStorage<string[]>('event-types', INITIAL_TYPES);
+  const [markers, setMarkers] = useState<MarkerEvent[]>([]);
+  const [availableTypes, setAvailableTypes] = useState<string[]>([]);
 
   const [filter, setFilter] = useState<FilterState>({
     municipality: '',
@@ -29,22 +33,147 @@ function App() {
   const [showBiomas, setShowBiomas] = useLocalStorage<boolean>('show-biomas', false);
   const [showVegetation, setShowVegetation] = useLocalStorage<boolean>('show-vegetation', false);
 
+  // Auth and Roles
+  const [session, setSession] = useState<any>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
+
+  // Initialize session
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session) fetchProfile(session.user.id, session.user.email || '', session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) {
+        fetchProfile(session.user.id, session.user.email || '', session);
+      } else {
+        setProfile(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const fetchProfile = async (userId: string, email: string, currentSession?: any) => {
+    const { data: roleData, error } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('id', userId)
+      .single();
+      
+    const { data: profileData } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    
+    console.log('Fetching profile for', userId, 'Role Result:', roleData, 'Profile Result:', profileData);
+    
+    const role = (!error && roleData) ? roleData.role : 'CIDADÃO';
+    const metadata = currentSession?.user?.user_metadata || {};
+    const userMun = profileData?.municipality || metadata.municipality;
+    
+    setProfile({ 
+      id: userId, 
+      email, 
+      role: role as any,
+      name: profileData?.name || metadata.name,
+      municipality: userMun
+    });
+
+    if (role !== 'ADMIN' && userMun) {
+      setSelectedMunicipality(userMun);
+      setFilter(prev => ({ ...prev, municipality: userMun }));
+    }
+  };
+
+  // Fetch initial data
+  useEffect(() => {
+    if (!session) return;
+
+    async function fetchData() {
+      // Fetch event types
+      const { data: typesData, error: typesError } = await supabase
+        .from('event_types')
+        .select('name');
+      
+      if (typesError) {
+        console.error('Error fetching event types:', typesError);
+      } else if (typesData) {
+        setAvailableTypes(typesData.map(t => t.name));
+      }
+
+      // Fetch markers (events)
+      const { data: eventsData, error: eventsError } = await supabase
+        .from('events')
+        .select('*');
+      
+      if (eventsError) {
+        console.error('Error fetching events:', eventsError);
+      } else if (eventsData) {
+        setMarkers(eventsData);
+      }
+    }
+
+    fetchData();
+  }, [session]);
+
   const handleMapClick = (lat: number, lng: number) => {
     setModalState({ isOpen: true, lat, lng });
   };
 
-  const handleSaveEvent = (newEvent: MarkerEvent) => {
-    setMarkers([...markers, newEvent]);
+  const handleSaveEvent = async (newEvent: MarkerEvent) => {
+    if (!session) return;
+    
+    // Insert into Supabase
+    const eventToSave = { ...newEvent, user_id: session.user.id };
+    const { error } = await supabase
+      .from('events')
+      .insert([eventToSave]);
+    
+    if (error) {
+      console.error('Error saving event:', error);
+      alert('Erro ao salvar evento. Verifique o console.');
+      return;
+    }
+
+    setMarkers([...markers, eventToSave]);
     setModalState(null);
   };
 
-  const handleAddType = (newType: string) => {
+  const handleAddType = async (newType: string) => {
     if (!availableTypes.includes(newType)) {
+      const { error } = await supabase
+        .from('event_types')
+        .insert([{ name: newType }]);
+      
+      if (error) {
+        console.error('Error saving event type:', error);
+        alert('Erro ao salvar tipo de evento.');
+        return;
+      }
+
       setAvailableTypes([...availableTypes, newType]);
     }
   };
 
-  const handleDeleteMarker = (id: string) => {
+  const handleDeleteMarker = async (id: string) => {
+    const { error } = await supabase
+      .from('events')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Error deleting event:', error);
+      alert('Erro ao deletar evento.');
+      return;
+    }
+
     setMarkers(markers.filter(marker => marker.id !== id));
   };
 
@@ -70,8 +199,72 @@ function App() {
     });
   }, [markers, filter]);
 
+  const handleExport = async (format: 'csv' | 'xlsx') => {
+    if (filteredMarkers.length === 0) {
+      alert('Nenhum dado para exportar com os filtros atuais.');
+      return;
+    }
+
+    // Fetch user profiles to map names
+    const { data: profiles } = await supabase.from('user_profiles').select('id, name');
+    const profileMap = new Map(profiles?.map(p => [p.id, p.name]) || []);
+
+    const formatDate = (dateStr: string) => {
+      if (!dateStr) return '';
+      const parts = dateStr.split('-');
+      if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      return dateStr;
+    };
+
+    const dataToExport = filteredMarkers.map(m => ({
+      'ID': m.id,
+      'Tipo de Evento': m.type,
+      'Município': m.municipality,
+      'Data': formatDate(m.date),
+      'Hora': m.time,
+      'Observação': m.observation,
+      'Latitude': m.lat,
+      'Longitude': m.lng,
+      'Usuário Nome': m.user_id ? (profileMap.get(m.user_id) || 'Desconhecido') : ''
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Eventos");
+    
+    if (format === 'csv') {
+      XLSX.writeFile(workbook, "Relatorio_Eventos.csv", { bookType: "csv" });
+    } else {
+      XLSX.writeFile(workbook, "Relatorio_Eventos.xlsx", { bookType: "xlsx" });
+    }
+  };
+
+  if (!session) {
+    return <Auth />;
+  }
+
+  const canDelete = profile?.role === 'ADMIN' || profile?.role === 'GESTOR';
+
   return (
     <div className="app-container">
+      {/* Top Navbar for Authenticated User */}
+      <div className="auth-buttons">
+        {profile?.role === 'ADMIN' && (
+          <button 
+            onClick={() => setShowAdminPanel(true)}
+            style={{ padding: '8px', display: 'flex', alignItems: 'center', gap: '5px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+          >
+            <Settings size={16} /> Painel Admin
+          </button>
+        )}
+        <button 
+          onClick={() => supabase.auth.signOut()}
+          style={{ padding: '8px', display: 'flex', alignItems: 'center', gap: '5px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+        >
+          <LogOut size={16} /> Sair ({profile?.role})
+        </button>
+      </div>
+
       <Sidebar
         filter={filter}
         setFilter={setFilter}
@@ -89,12 +282,14 @@ function App() {
         setShowBiomas={setShowBiomas}
         showVegetation={showVegetation}
         setShowVegetation={setShowVegetation}
+        canExport={canDelete}
+        onExport={handleExport}
       />
 
       <MapArea
         markers={filteredMarkers}
         onMapClick={handleMapClick}
-        onDeleteMarker={handleDeleteMarker}
+        onDeleteMarker={canDelete ? handleDeleteMarker : undefined}
         showUgrhi4={showUgrhi4}
         isInsertMode={isInsertMode}
         selectedMunicipality={selectedMunicipality}
@@ -118,6 +313,8 @@ function App() {
           onAddType={handleAddType}
         />
       )}
+
+      {showAdminPanel && <AdminPanel onClose={() => setShowAdminPanel(false)} />}
     </div>
   );
 }

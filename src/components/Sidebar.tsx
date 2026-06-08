@@ -1,6 +1,6 @@
 import React from 'react';
 import type { FilterState, MarkerEvent } from '../types';
-import { Filter, MapPin } from 'lucide-react';
+import { Filter, MapPin, Download } from 'lucide-react';
 import { RightSidebar } from './RightSidebar';
 
 interface SidebarProps {
@@ -14,6 +14,8 @@ interface SidebarProps {
   setIsInsertMode: React.Dispatch<React.SetStateAction<boolean>>;
   selectedMunicipality: string | null;
   setSelectedMunicipality: React.Dispatch<React.SetStateAction<string | null>>;
+  canExport: boolean;
+  onExport: (format: 'csv' | 'xlsx') => void;
 }
 
 export const Sidebar: React.FC<SidebarProps & {
@@ -26,7 +28,8 @@ export const Sidebar: React.FC<SidebarProps & {
 }> = ({ 
   filter, setFilter, markers, availableTypes, showUgrhi4, setShowUgrhi4, 
   isInsertMode, setIsInsertMode, selectedMunicipality, setSelectedMunicipality,
-  mapLayer, setMapLayer, showBiomas, setShowBiomas, showVegetation, setShowVegetation
+  mapLayer, setMapLayer, showBiomas, setShowBiomas, showVegetation, setShowVegetation,
+  canExport, onExport
 }) => {
   // Extract unique municipalities from the available events
   const uniqueMunicipalities = Array.from(new Set(markers.map(m => m.municipality).filter(Boolean))).sort();
@@ -106,6 +109,31 @@ export const Sidebar: React.FC<SidebarProps & {
             />
           </div>
         </div>
+
+        {canExport && (
+          <div className="filter-group" style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#f0fdf4', borderRadius: 'var(--radius-md)' }}>
+            <label style={{ fontWeight: 600, color: '#166534', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              <Download size={16} /> Exportar Relatório
+            </label>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button 
+                onClick={() => onExport('csv')}
+                style={{ flex: 1, padding: '8px', background: '#22c55e', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 600 }}
+              >
+                .CSV
+              </button>
+              <button 
+                onClick={() => onExport('xlsx')}
+                style={{ flex: 1, padding: '8px', background: '#16a34a', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 600 }}
+              >
+                .XLSX
+              </button>
+            </div>
+            <p style={{ fontSize: '0.75rem', color: '#15803d', marginTop: '0.5rem' }}>
+              Exporta os eventos de acordo com os filtros aplicados.
+            </p>
+          </div>
+        )}
 
         <div className="filter-group" style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#f1f5f9', borderRadius: 'var(--radius-md)' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', color: 'var(--text-primary)', fontWeight: 600 }}>

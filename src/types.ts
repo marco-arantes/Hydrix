@@ -1,3 +1,13 @@
+export type UserRole = 'ADMIN' | 'GESTOR' | 'CIDADÃO';
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  role: UserRole;
+  name?: string;
+  municipality?: string;
+}
+
 export interface MarkerEvent {
   id: string;
   type: string;
@@ -7,6 +17,7 @@ export interface MarkerEvent {
   municipality: string;
   lat: number;
   lng: number;
+  user_id?: string;
 }
 
 export interface FilterState {
