@@ -24,7 +24,7 @@ export const Sidebar: React.FC<SidebarProps & {
   setShowVegetation: React.Dispatch<React.SetStateAction<boolean>>;
 }> = ({ 
   filter, setFilter, markers, availableTypes, showUgrhi4, setShowUgrhi4, 
-  isInsertMode, setIsInsertMode, selectedMunicipality, setSelectedMunicipality,
+  isInsertMode, setIsInsertMode, setSelectedMunicipality,
   mapLayer, setMapLayer, showBiomas, setShowBiomas, showVegetation, setShowVegetation
 }) => {
   // Extract unique municipalities from the available events

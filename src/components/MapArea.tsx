@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents, GeoJSON, LayersControl, WMSTileLayer } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, GeoJSON, WMSTileLayer } from 'react-leaflet';
 import L from 'leaflet';
 import type { MarkerEvent } from '../types';
 import { fetchMunicipality } from '../utils/reverseGeocode';
