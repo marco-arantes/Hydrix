@@ -39,8 +39,8 @@ const MapEvents: React.FC<{ onMapClick: (lat: number, lng: number) => void }> = 
   return null;
 };
 
-export const MapArea: React.FC<MapAreaProps> = ({ 
-  markers, onMapClick, showUgrhi4, isInsertMode, 
+export const MapArea: React.FC<MapAreaProps> = ({
+  markers, onMapClick, showUgrhi4, isInsertMode,
   selectedMunicipality, setSelectedMunicipality,
   mapLayer, showBiomas, showVegetation, onDeleteMarker
 }) => {
@@ -66,11 +66,11 @@ export const MapArea: React.FC<MapAreaProps> = ({
 
     const fetchBoundaries = async () => {
       const uniqueMunicipalities = Array.from(new Set(markers.map(m => m.municipality).filter(Boolean)));
-      
+
       for (const mun of uniqueMunicipalities) {
         if (!active) break;
         if (fetched.current.has(mun)) continue;
-        
+
         fetched.current.add(mun); // mark as fetched or in-progress
 
         try {
@@ -87,7 +87,7 @@ export const MapArea: React.FC<MapAreaProps> = ({
         } catch (e) {
           console.error("Error fetching boundary for", mun, e);
         }
-        
+
         // Wait 1.1s to respect Nominatim limits
         await new Promise(resolve => setTimeout(resolve, 1100));
       }
@@ -99,9 +99,9 @@ export const MapArea: React.FC<MapAreaProps> = ({
 
   return (
     <div className="map-container">
-      <MapContainer 
-        center={defaultCenter} 
-        zoom={zoomLevel} 
+      <MapContainer
+        center={defaultCenter}
+        zoom={zoomLevel}
         style={{ height: '100%', width: '100%' }}
       >
         {mapLayer === 'osm' ? (
@@ -145,7 +145,7 @@ export const MapArea: React.FC<MapAreaProps> = ({
         )}
         <MapEvents onMapClick={async (lat, lng) => {
           setSelectedMunicipality(null);
-          
+
           if (isInsertMode) {
             onMapClick(lat, lng);
           } else {
@@ -153,7 +153,7 @@ export const MapArea: React.FC<MapAreaProps> = ({
             const munName = await fetchMunicipality(lat, lng);
             if (munName) {
               setSelectedMunicipality(munName);
-              
+
               // Se ainda não temos o contorno em cache, buscamos
               if (!boundaries[munName]) {
                 try {
@@ -176,9 +176,9 @@ export const MapArea: React.FC<MapAreaProps> = ({
         }} />
 
         {selectedMunicipality && boundaries[selectedMunicipality] && (
-          <GeoJSON 
-            key={`boundary-${selectedMunicipality}`} 
-            data={boundaries[selectedMunicipality]} 
+          <GeoJSON
+            key={`boundary-${selectedMunicipality}`}
+            data={boundaries[selectedMunicipality]}
             style={{
               color: 'var(--primary-color)',
               weight: 2,
@@ -190,11 +190,11 @@ export const MapArea: React.FC<MapAreaProps> = ({
         )}
 
         {showUgrhi4 && ugrhiGeoJson && (
-          <GeoJSON 
+          <GeoJSON
             key="ugrhi4-layer"
             data={ugrhiGeoJson}
             style={{
-              color: '#000080', 
+              color: '#000080',
               weight: 3,
               opacity: 0.9,
               fillColor: '#3b82f6',
@@ -202,10 +202,10 @@ export const MapArea: React.FC<MapAreaProps> = ({
             }}
           />
         )}
-        
+
         {markers.map((marker) => (
-          <Marker 
-            key={marker.id} 
+          <Marker
+            key={marker.id}
             position={[marker.lat, marker.lng]}
             eventHandlers={{
               click: () => setSelectedMunicipality(marker.municipality)

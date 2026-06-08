@@ -17,14 +17,14 @@ export interface FilterState {
 }
 
 export const INITIAL_TYPES = [
-  'Afundamento do pavimento',
+  'Afundamento do Pavimento',
   'Alagamento',
   'Cheia',
   'Deslizamento',
   'Enxurrada',
   'Estiagem',
-  'Falta de água',
+  'Falta de Água',
   'Inundação',
-  'Queda de ponte',
+  'Queda de Ponte',
   'Seca'
 ];
