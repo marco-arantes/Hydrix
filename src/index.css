@@ -252,6 +252,13 @@ input:focus, select:focus, textarea:focus {
   to { opacity: 1; }
 }
 
+.desktop-right-sidebar {
+  display: contents;
+}
+.mobile-right-sidebar {
+  display: none;
+}
+
 @keyframes slideUp {
   from { transform: translateY(20px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
@@ -295,9 +302,32 @@ input:focus, select:focus, textarea:focus {
     order: 2;
   }
 
-  .right-sidebar {
-    order: 3;
+  .desktop-right-sidebar {
+    display: none;
+  }
+
+  .mobile-right-sidebar {
+    display: block;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .mobile-right-sidebar .right-sidebar {
+    width: 100%;
     min-height: auto;
+    border: none;
+    box-shadow: none;
+  }
+
+  .mobile-right-sidebar .sidebar-header {
+    padding: 0 0 1rem 0;
+    border: none;
+  }
+
+  .mobile-right-sidebar .sidebar-content {
+    padding: 0;
+    gap: 0.5rem;
   }
 
   .sidebar-header {

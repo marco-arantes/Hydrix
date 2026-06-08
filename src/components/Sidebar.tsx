@@ -1,6 +1,7 @@
 import React from 'react';
 import type { FilterState, MarkerEvent } from '../types';
 import { Filter, MapPin } from 'lucide-react';
+import { RightSidebar } from './RightSidebar';
 
 interface SidebarProps {
   filter: FilterState;
@@ -24,7 +25,7 @@ export const Sidebar: React.FC<SidebarProps & {
   setShowVegetation: React.Dispatch<React.SetStateAction<boolean>>;
 }> = ({ 
   filter, setFilter, markers, availableTypes, showUgrhi4, setShowUgrhi4, 
-  isInsertMode, setIsInsertMode, setSelectedMunicipality,
+  isInsertMode, setIsInsertMode, selectedMunicipality, setSelectedMunicipality,
   mapLayer, setMapLayer, showBiomas, setShowBiomas, showVegetation, setShowVegetation
 }) => {
   // Extract unique municipalities from the available events
@@ -184,6 +185,10 @@ export const Sidebar: React.FC<SidebarProps & {
           </div>
         </div>
 
+        {/* Mobile Right Sidebar Placeholder */}
+        <div className="mobile-right-sidebar">
+          <RightSidebar selectedMunicipality={selectedMunicipality} />
+        </div>
 
         <div style={{ marginTop: 'auto', paddingTop: '20px', borderTop: '1px solid var(--border-color)' }}>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>

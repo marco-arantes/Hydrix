@@ -104,7 +104,9 @@ function App() {
         showVegetation={showVegetation}
       />
 
-      <RightSidebar selectedMunicipality={selectedMunicipality} />
+      <div className="desktop-right-sidebar">
+        <RightSidebar selectedMunicipality={selectedMunicipality} />
+      </div>
 
       {modalState?.isOpen && (
         <EventModal
