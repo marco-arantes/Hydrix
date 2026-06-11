@@ -14,7 +14,7 @@ import './index.css';
 
 function App() {
   const [markers, setMarkers] = useState<MarkerEvent[]>([]);
-  const [availableTypes, setAvailableTypes] = useState<string[]>([]);
+  const [availableTypes, setAvailableTypes] = useState<{id: string, name: string}[]>([]);
 
   const [filter, setFilter] = useState<FilterState>({
     municipality: '',
@@ -100,23 +100,27 @@ function App() {
       // Fetch event types
       const { data: typesData, error: typesError } = await supabase
         .from('event_types')
-        .select('name');
+        .select('id, name');
       
       if (typesError) {
         console.error('Error fetching event types:', typesError);
       } else if (typesData) {
-        setAvailableTypes(typesData.map(t => t.name));
+        setAvailableTypes(typesData);
       }
 
-      // Fetch markers (events)
+      // Fetch markers (events) with joined event_types
       const { data: eventsData, error: eventsError } = await supabase
         .from('events')
-        .select('*');
+        .select('*, event_types(name)');
       
       if (eventsError) {
         console.error('Error fetching events:', eventsError);
       } else if (eventsData) {
-        setMarkers(eventsData);
+        const formattedEvents = eventsData.map((e: any) => ({
+          ...e,
+          event_type_name: e.event_types?.name
+        }));
+        setMarkers(formattedEvents);
       }
     }
 
@@ -147,10 +151,12 @@ function App() {
   };
 
   const handleAddType = async (newType: string) => {
-    if (!availableTypes.includes(newType)) {
-      const { error } = await supabase
+    if (!availableTypes.find(t => t.name === newType)) {
+      const { data, error } = await supabase
         .from('event_types')
-        .insert([{ name: newType }]);
+        .insert([{ name: newType }])
+        .select('id, name')
+        .single();
       
       if (error) {
         console.error('Error saving event type:', error);
@@ -158,7 +164,9 @@ function App() {
         return;
       }
 
-      setAvailableTypes([...availableTypes, newType]);
+      if (data) {
+        setAvailableTypes([...availableTypes, data]);
+      }
     }
   };
 
@@ -185,7 +193,7 @@ function App() {
         return false;
       }
       // Filter by event type
-      if (filter.eventType && marker.type !== filter.eventType) {
+      if (filter.eventType && marker.event_type_name !== filter.eventType) {
         return false;
       }
       // Filter by date range
@@ -218,7 +226,7 @@ function App() {
 
     const dataToExport = filteredMarkers.map(m => ({
       'ID': m.id,
-      'Tipo de Evento': m.type,
+      'Tipo de Evento': m.event_type_name || 'Desconhecido',
       'Município': m.municipality,
       'Data': formatDate(m.date),
       'Hora': m.time,

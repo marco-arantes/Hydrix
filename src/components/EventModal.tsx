@@ -9,7 +9,7 @@ interface EventModalProps {
   lng?: number;
   onClose: () => void;
   onSave: (event: MarkerEvent) => void;
-  availableTypes: string[];
+  availableTypes: { id: string, name: string }[];
   onAddType: (newType: string) => void;
 }
 
@@ -21,7 +21,7 @@ export const EventModal: React.FC<EventModalProps> = ({
   availableTypes, 
   onAddType 
 }) => {
-  const [type, setType] = useState(availableTypes[0] || '');
+  const [typeId, setTypeId] = useState(availableTypes[0]?.id || '');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [time, setTime] = useState(
     new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
@@ -55,7 +55,7 @@ export const EventModal: React.FC<EventModalProps> = ({
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!type) {
+    if (!typeId && !isCreatingType) {
       alert("Por favor, selecione ou crie um tipo de evento.");
       return;
     }
@@ -83,7 +83,7 @@ export const EventModal: React.FC<EventModalProps> = ({
     
     onSave({
       id: uuidv4(),
-      type,
+      event_type_id: typeId,
       date,
       time,
       observation,
@@ -96,7 +96,7 @@ export const EventModal: React.FC<EventModalProps> = ({
   const handleAddType = () => {
     if (newTypeName.trim()) {
       onAddType(newTypeName.trim());
-      setType(newTypeName.trim());
+      // Type selection will be updated via props once added to DB.
       setNewTypeName('');
       setIsCreatingType(false);
     }
@@ -119,13 +119,13 @@ export const EventModal: React.FC<EventModalProps> = ({
               {!isCreatingType ? (
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <select 
-                    value={type} 
-                    onChange={(e) => setType(e.target.value)}
+                    value={typeId} 
+                    onChange={(e) => setTypeId(e.target.value)}
                     required
                   >
                     <option value="" disabled>Selecione um tipo...</option>
                     {availableTypes.map((t) => (
-                      <option key={t} value={t}>{t}</option>
+                      <option key={t.id} value={t.id}>{t.name}</option>
                     ))}
                   </select>
                   <button 

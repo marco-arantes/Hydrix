@@ -10,7 +10,8 @@ export interface UserProfile {
 
 export interface MarkerEvent {
   id: string;
-  type: string;
+  event_type_id: string; // Refers to event_types.id
+  event_type_name?: string; // Loaded via JOIN for display/export
   date: string; // YYYY-MM-DD
   time: string; // HH:mm
   observation: string;

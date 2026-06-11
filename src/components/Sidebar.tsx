@@ -7,7 +7,7 @@ interface SidebarProps {
   filter: FilterState;
   setFilter: React.Dispatch<React.SetStateAction<FilterState>>;
   markers: MarkerEvent[];
-  availableTypes: string[];
+  availableTypes: { id: string, name: string }[];
   showUgrhi4: boolean;
   setShowUgrhi4: React.Dispatch<React.SetStateAction<boolean>>;
   isInsertMode: boolean;
@@ -79,8 +79,8 @@ export const Sidebar: React.FC<SidebarProps & {
           >
             <option value="">Todos os tipos</option>
             {availableTypes.map((type) => (
-              <option key={type} value={type}>
-                {type}
+              <option key={type.id} value={type.name}>
+                {type.name}
               </option>
             ))}
           </select>

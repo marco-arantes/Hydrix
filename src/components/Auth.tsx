@@ -26,6 +26,7 @@ export function Auth() {
           email,
           password,
           options: {
+            emailRedirectTo: window.location.origin,
             data: {
               name,
               birthDate,
@@ -34,7 +35,7 @@ export function Auth() {
           }
         });
         if (error) throw error;
-        alert('Cadastro realizado! Se configurado, verifique seu email.');
+        alert('Cadastro realizado com sucesso! Verifique seu e-mail para confirmar a conta.');
       }
     } catch (error: any) {
       alert(error.error_description || error.message);
