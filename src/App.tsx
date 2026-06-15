@@ -12,6 +12,11 @@ import { LogOut, Settings } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import './index.css';
 
+const normalizeString = (str?: string | null) => {
+  if (!str) return '';
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+};
+
 function App() {
   const [markers, setMarkers] = useState<MarkerEvent[]>([]);
   const [availableTypes, setAvailableTypes] = useState<{id: string, name: string}[]>([]);
@@ -53,6 +58,9 @@ function App() {
         fetchProfile(session.user.id, session.user.email || '', session);
       } else {
         setProfile(null);
+        setMarkers([]);
+        setFilter({ municipality: '', eventType: '', startDate: '', endDate: '' });
+        setSelectedMunicipality(null);
       }
     });
 
@@ -111,10 +119,11 @@ function App() {
       // Fetch markers (events) with joined event_types
       const { data: eventsData, error: eventsError } = await supabase
         .from('events')
-        .select('*, event_types(name)');
+        .select('id, event_type_id, date, time, observation, municipality, lat, lng, user_id, event_types(name)');
       
       if (eventsError) {
         console.error('Error fetching events:', eventsError);
+        alert('Erro ao buscar eventos: ' + (eventsError.message || JSON.stringify(eventsError)));
       } else if (eventsData) {
         const formattedEvents = eventsData.map((e: any) => ({
           ...e,
@@ -145,7 +154,7 @@ function App() {
     
     if (error) {
       console.error('Error saving event:', error);
-      alert('Erro ao salvar evento. Verifique o console.');
+      alert('Erro ao salvar evento: ' + (error.message || JSON.stringify(error)));
       return;
     }
 
@@ -191,9 +200,17 @@ function App() {
   // Filter markers based on sidebar state
   const filteredMarkers = useMemo(() => {
     return markers.filter(marker => {
-      // Filter by municipality
-      if (filter.municipality && marker.municipality !== filter.municipality) {
-        return false;
+      // Filter by municipality (ignoring case and accents, checking if one contains the other)
+      if (filter.municipality) {
+        // Se for o próprio usuário que criou o evento, ele sempre pode ver (ignora o filtro de município)
+        const isOwner = session && session.user.id === marker.user_id;
+        if (!isOwner) {
+          const normMarker = normalizeString(marker.municipality);
+          const normFilter = normalizeString(filter.municipality);
+          if (!normMarker.includes(normFilter) && !normFilter.includes(normMarker)) {
+            return false;
+          }
+        }
       }
       // Filter by event type
       if (filter.eventType && marker.event_type_name !== filter.eventType) {
@@ -250,71 +267,79 @@ function App() {
     }
   };
 
-  if (!session) {
-    return <Auth />;
-  }
-
   const canDelete = profile?.role === 'ADMIN' || profile?.role === 'GESTOR';
 
   return (
-    <div className="app-container">
-      {/* Top Navbar for Authenticated User */}
-      <div className="auth-buttons">
-        {profile?.role === 'ADMIN' && (
-          <button 
-            onClick={() => setShowAdminPanel(true)}
-            style={{ padding: '8px', display: 'flex', alignItems: 'center', gap: '5px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-          >
-            <Settings size={16} /> Painel Admin
-          </button>
-        )}
-        <button 
-          onClick={() => supabase.auth.signOut()}
-          style={{ padding: '8px', display: 'flex', alignItems: 'center', gap: '5px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-        >
-          <LogOut size={16} /> Sair ({profile?.role})
-        </button>
+    <div className="app-wrapper" style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100vh' }}>
+      <div className="top-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 20px', backgroundColor: '#fff', borderBottom: '1px solid #e2e8f0', zIndex: 1100 }}>
+        <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: '#3b82f6' }}>Projeto Mapa</div>
+        <div className="auth-buttons-top" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          {session && (
+            <>
+              <div style={{ fontSize: '0.85rem', color: '#64748b', marginRight: '10px', textAlign: 'right' }}>
+                 <div style={{ fontWeight: 600, color: '#334155', marginBottom: '2px' }}>{profile?.name || profile?.email}</div>
+                 <div>{profile?.municipality || 'Sem município'} • {profile?.role}</div>
+              </div>
+              {profile?.role === 'ADMIN' && (
+                <button onClick={() => setShowAdminPanel(true)} className="btn-primary">
+                  <Settings size={16} /> Painel Admin
+                </button>
+              )}
+              <button onClick={() => supabase.auth.signOut()} className="btn-danger">
+                <LogOut size={16} /> Sair
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
-      <Sidebar
-        filter={filter}
-        setFilter={setFilter}
-        markers={markers}
-        availableTypes={availableTypes}
-        showUgrhi4={showUgrhi4}
-        setShowUgrhi4={setShowUgrhi4}
-        isInsertMode={isInsertMode}
-        setIsInsertMode={setIsInsertMode}
-        selectedMunicipality={selectedMunicipality}
-        setSelectedMunicipality={setSelectedMunicipality}
-        mapLayer={mapLayer}
-        setMapLayer={setMapLayer}
-        showBiomas={showBiomas}
-        setShowBiomas={setShowBiomas}
-        showVegetation={showVegetation}
-        setShowVegetation={setShowVegetation}
-        canExport={canDelete}
-        onExport={handleExport}
-      />
+      <div className="app-container" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
-      <MapArea
-        markers={filteredMarkers}
-        onMapClick={handleMapClick}
-        onDeleteMarker={canDelete ? handleDeleteMarker : undefined}
-        showUgrhi4={showUgrhi4}
-        isInsertMode={isInsertMode}
-        selectedMunicipality={selectedMunicipality}
-        setSelectedMunicipality={setSelectedMunicipality}
-        mapLayer={mapLayer}
-        showBiomas={showBiomas}
-        showVegetation={showVegetation}
-      />
+      {session ? (
+        <>
+          <Sidebar
+            filter={filter}
+            setFilter={setFilter}
+            markers={markers}
+            availableTypes={availableTypes}
+            showUgrhi4={showUgrhi4}
+            setShowUgrhi4={setShowUgrhi4}
+            isInsertMode={isInsertMode}
+            setIsInsertMode={setIsInsertMode}
+            selectedMunicipality={selectedMunicipality}
+            setSelectedMunicipality={setSelectedMunicipality}
+            mapLayer={mapLayer}
+            setMapLayer={setMapLayer}
+            showBiomas={showBiomas}
+            setShowBiomas={setShowBiomas}
+            showVegetation={showVegetation}
+            setShowVegetation={setShowVegetation}
+            canExport={canDelete}
+            onExport={handleExport}
+          />
 
-      <div className="desktop-right-sidebar">
-        <RightSidebar selectedMunicipality={selectedMunicipality} />
-      </div>
+          <MapArea
+            markers={filteredMarkers}
+            onMapClick={handleMapClick}
+            onDeleteMarker={canDelete ? handleDeleteMarker : undefined}
+            showUgrhi4={showUgrhi4}
+            isInsertMode={isInsertMode}
+            selectedMunicipality={selectedMunicipality}
+            setSelectedMunicipality={setSelectedMunicipality}
+            mapLayer={mapLayer}
+            showBiomas={showBiomas}
+            showVegetation={showVegetation}
+          />
 
-      {modalState?.isOpen && (
+          <div className="desktop-right-sidebar">
+            <RightSidebar selectedMunicipality={selectedMunicipality} />
+          </div>
+        </>
+      ) : (
+        <Auth />
+      )}
+
+      {modalState && (
         <EventModal
           lat={modalState.lat}
           lng={modalState.lng}
@@ -322,10 +347,12 @@ function App() {
           onSave={handleSaveEvent}
           availableTypes={availableTypes}
           onAddType={handleAddType}
+          userMunicipality={profile?.role === 'CIDADÃO' ? profile?.municipality : undefined}
         />
       )}
 
       {showAdminPanel && <AdminPanel onClose={() => setShowAdminPanel(false)} />}
+      </div>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 
-export function Auth() {
+export function Auth({ onClose }: { onClose?: () => void }) {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -13,7 +13,7 @@ export function Auth() {
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({
@@ -47,6 +47,9 @@ export function Auth() {
   return (
     <div className="auth-container" style={styles.container}>
       <div style={styles.card}>
+        {onClose && (
+          <button type="button" onClick={onClose} style={{ float: 'right', background: 'none', border: 'none', color: '#fff', fontSize: '1.5rem', cursor: 'pointer', marginTop: '-10px', marginRight: '-10px' }}>&times;</button>
+        )}
         <h2 style={styles.title}>{isLogin ? 'Entrar no Sistema' : 'Criar Conta'}</h2>
         <form onSubmit={handleAuth} style={styles.form}>
           <input
@@ -97,8 +100,8 @@ export function Auth() {
             {loading ? 'Aguarde...' : (isLogin ? 'Entrar' : 'Cadastrar')}
           </button>
         </form>
-        <button 
-          onClick={() => setIsLogin(!isLogin)} 
+        <button
+          onClick={() => setIsLogin(!isLogin)}
           style={styles.toggleBtn}
         >
           {isLogin ? 'Não tem conta? Cadastre-se' : 'Já tem conta? Entre'}
@@ -111,7 +114,8 @@ export function Auth() {
 const styles = {
   container: {
     display: 'flex',
-    height: '100vh',
+    width: '100%',
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#1a1a1a',

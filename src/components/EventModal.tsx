@@ -11,7 +11,13 @@ interface EventModalProps {
   onSave: (event: MarkerEvent) => void;
   availableTypes: { id: string, name: string }[];
   onAddType: (newType: string) => void;
+  userMunicipality?: string;
 }
+
+const normalizeString = (str?: string | null) => {
+  if (!str) return '';
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+};
 
 export const EventModal: React.FC<EventModalProps> = ({ 
   lat, 
@@ -19,7 +25,8 @@ export const EventModal: React.FC<EventModalProps> = ({
   onClose, 
   onSave, 
   availableTypes, 
-  onAddType 
+  onAddType,
+  userMunicipality
 }) => {
   const [typeId, setTypeId] = useState(availableTypes[0]?.id || '');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -35,6 +42,7 @@ export const EventModal: React.FC<EventModalProps> = ({
   const [newTypeName, setNewTypeName] = useState('');
   const [isLoadingMunicipality, setIsLoadingMunicipality] = useState(lat !== undefined && lng !== undefined);
   const [isSaving, setIsSaving] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   // Auto-fetch municipality based on Geolocation if lat/lng are provided
   useEffect(() => {
@@ -47,11 +55,19 @@ export const EventModal: React.FC<EventModalProps> = ({
       if (active) {
         setMunicipality(m);
         setIsLoadingMunicipality(false);
+        
+        if (userMunicipality && m) {
+          const normM = normalizeString(m);
+          const normU = normalizeString(userMunicipality);
+          if (!normM.includes(normU) && !normU.includes(normM)) {
+            setShowConfirmDialog(true);
+          }
+        }
       }
     };
     getMun();
     return () => { active = false; };
-  }, [lat, lng]);
+  }, [lat, lng, userMunicipality]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,7 +121,37 @@ export const EventModal: React.FC<EventModalProps> = ({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <form onSubmit={handleSave}>
+        {showConfirmDialog ? (
+          <div style={{ textAlign: 'center', padding: '20px' }}>
+            <h2 style={{ marginBottom: '15px', color: '#ef4444' }}>Atenção</h2>
+            <p style={{ marginBottom: '20px', fontSize: '1.1rem' }}>
+              Deseja Incluir um Evento para Outro Município? 
+              <br/><br/>
+              <strong>Seu município:</strong> {userMunicipality}
+              <br/>
+              <strong>Município clicado:</strong> {municipality}
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '15px' }}>
+              <button 
+                type="button" 
+                className="btn-primary" 
+                onClick={() => setShowConfirmDialog(false)}
+                style={{ padding: '10px 30px' }}
+              >
+                Sim
+              </button>
+              <button 
+                type="button" 
+                className="btn-outline" 
+                onClick={onClose}
+                style={{ padding: '10px 30px' }}
+              >
+                Não
+              </button>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSave}>
           <div className="modal-header">
             <h2>Registrar Evento Crítico</h2>
             <button type="button" className="close-btn" onClick={onClose}>
@@ -238,6 +284,7 @@ export const EventModal: React.FC<EventModalProps> = ({
             </button>
           </div>
         </form>
+        )}
       </div>
     </div>
   );
