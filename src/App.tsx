@@ -19,7 +19,7 @@ const normalizeString = (str?: string | null) => {
 
 function App() {
   const [markers, setMarkers] = useState<MarkerEvent[]>([]);
-  const [availableTypes, setAvailableTypes] = useState<{id: string, name: string}[]>([]);
+  const [availableTypes, setAvailableTypes] = useState<{ id: string, name: string }[]>([]);
 
   const [filter, setFilter] = useState<FilterState>({
     municipality: '',
@@ -73,22 +73,22 @@ function App() {
       .select('role')
       .eq('id', userId)
       .single();
-      
+
     const { data: profileData } = await supabase
       .from('user_profiles')
       .select('*')
       .eq('id', userId)
       .single();
-    
+
     console.log('Fetching profile for', userId, 'Role Result:', roleData, 'Profile Result:', profileData);
-    
+
     const role = (!error && roleData) ? roleData.role : 'CIDADÃO';
     const metadata = currentSession?.user?.user_metadata || {};
     const userMun = profileData?.municipality || metadata.municipality;
-    
-    setProfile({ 
-      id: userId, 
-      email, 
+
+    setProfile({
+      id: userId,
+      email,
       role: role as any,
       name: profileData?.name || metadata.name,
       municipality: userMun
@@ -109,7 +109,7 @@ function App() {
       const { data: typesData, error: typesError } = await supabase
         .from('event_types')
         .select('id, name');
-      
+
       if (typesError) {
         console.error('Error fetching event types:', typesError);
       } else if (typesData) {
@@ -120,7 +120,7 @@ function App() {
       const { data: eventsData, error: eventsError } = await supabase
         .from('events')
         .select('id, event_type_id, date, time, observation, municipality, lat, lng, user_id, event_types(name)');
-      
+
       if (eventsError) {
         console.error('Error fetching events:', eventsError);
         alert('Erro ao buscar eventos: ' + (eventsError.message || JSON.stringify(eventsError)));
@@ -142,23 +142,24 @@ function App() {
 
   const handleSaveEvent = async (newEvent: MarkerEvent) => {
     if (!session) return;
-    
+
     // Strip old/display properties to avoid schema errors from cached clients
     const { event_type_name, type, ...rest } = newEvent as any;
-    
+
     // Insert into Supabase
     const eventToSave = { ...rest, user_id: session.user.id };
     const { error } = await supabase
       .from('events')
       .insert([eventToSave]);
-    
+
     if (error) {
       console.error('Error saving event:', error);
       alert('Erro ao salvar evento: ' + (error.message || JSON.stringify(error)));
       return;
     }
 
-    setMarkers([...markers, eventToSave]);
+    const typeObj = availableTypes.find(t => t.id === eventToSave.event_type_id);
+    setMarkers([...markers, { ...eventToSave, event_type_name: typeObj?.name }]);
     setModalState(null);
   };
 
@@ -169,7 +170,7 @@ function App() {
         .insert([{ name: newType }])
         .select('id, name')
         .single();
-      
+
       if (error) {
         console.error('Error saving event type:', error);
         alert('Erro ao salvar tipo de evento.');
@@ -187,7 +188,7 @@ function App() {
       .from('events')
       .delete()
       .eq('id', id);
-    
+
     if (error) {
       console.error('Error deleting event:', error);
       alert('Erro ao deletar evento.');
@@ -259,7 +260,7 @@ function App() {
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Eventos");
-    
+
     if (format === 'csv') {
       XLSX.writeFile(workbook, "Relatorio_Eventos.csv", { bookType: "csv" });
     } else {
@@ -272,13 +273,13 @@ function App() {
   return (
     <div className="app-wrapper" style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100vh' }}>
       <div className="top-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 20px', backgroundColor: '#fff', borderBottom: '1px solid #e2e8f0', zIndex: 1100 }}>
-        <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: '#3b82f6' }}>Projeto Mapa</div>
+        <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: '#3b82f6' }}>HYDRIX</div>
         <div className="auth-buttons-top" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           {session && (
             <>
               <div style={{ fontSize: '0.85rem', color: '#64748b', marginRight: '10px', textAlign: 'right' }}>
-                 <div style={{ fontWeight: 600, color: '#334155', marginBottom: '2px' }}>{profile?.name || profile?.email}</div>
-                 <div>{profile?.municipality || 'Sem município'} • {profile?.role}</div>
+                <div style={{ fontWeight: 600, color: '#334155', marginBottom: '2px' }}>{profile?.name || profile?.email}</div>
+                <div>{profile?.municipality || 'Sem município'} • {profile?.role}</div>
               </div>
               {profile?.role === 'ADMIN' && (
                 <button onClick={() => setShowAdminPanel(true)} className="btn-primary">
@@ -295,63 +296,63 @@ function App() {
 
       <div className="app-container" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
-      {session ? (
-        <>
-          <Sidebar
-            filter={filter}
-            setFilter={setFilter}
-            markers={markers}
+        {session ? (
+          <>
+            <Sidebar
+              filter={filter}
+              setFilter={setFilter}
+              markers={markers}
+              availableTypes={availableTypes}
+              showUgrhi4={showUgrhi4}
+              setShowUgrhi4={setShowUgrhi4}
+              isInsertMode={isInsertMode}
+              setIsInsertMode={setIsInsertMode}
+              selectedMunicipality={selectedMunicipality}
+              setSelectedMunicipality={setSelectedMunicipality}
+              mapLayer={mapLayer}
+              setMapLayer={setMapLayer}
+              showBiomas={showBiomas}
+              setShowBiomas={setShowBiomas}
+              showVegetation={showVegetation}
+              setShowVegetation={setShowVegetation}
+              canExport={canDelete}
+              onExport={handleExport}
+            />
+
+            <MapArea
+              markers={filteredMarkers}
+              onMapClick={handleMapClick}
+              onDeleteMarker={canDelete ? handleDeleteMarker : undefined}
+              showUgrhi4={showUgrhi4}
+              isInsertMode={isInsertMode}
+              selectedMunicipality={selectedMunicipality}
+              setSelectedMunicipality={setSelectedMunicipality}
+              mapLayer={mapLayer}
+              showBiomas={showBiomas}
+              showVegetation={showVegetation}
+            />
+
+            <div className="desktop-right-sidebar">
+              <RightSidebar selectedMunicipality={selectedMunicipality} markers={markers} />
+            </div>
+          </>
+        ) : (
+          <Auth />
+        )}
+
+        {modalState && (
+          <EventModal
+            lat={modalState.lat}
+            lng={modalState.lng}
+            onClose={() => setModalState(null)}
+            onSave={handleSaveEvent}
             availableTypes={availableTypes}
-            showUgrhi4={showUgrhi4}
-            setShowUgrhi4={setShowUgrhi4}
-            isInsertMode={isInsertMode}
-            setIsInsertMode={setIsInsertMode}
-            selectedMunicipality={selectedMunicipality}
-            setSelectedMunicipality={setSelectedMunicipality}
-            mapLayer={mapLayer}
-            setMapLayer={setMapLayer}
-            showBiomas={showBiomas}
-            setShowBiomas={setShowBiomas}
-            showVegetation={showVegetation}
-            setShowVegetation={setShowVegetation}
-            canExport={canDelete}
-            onExport={handleExport}
+            onAddType={handleAddType}
+            userMunicipality={profile?.role === 'CIDADÃO' ? profile?.municipality : undefined}
           />
+        )}
 
-          <MapArea
-            markers={filteredMarkers}
-            onMapClick={handleMapClick}
-            onDeleteMarker={canDelete ? handleDeleteMarker : undefined}
-            showUgrhi4={showUgrhi4}
-            isInsertMode={isInsertMode}
-            selectedMunicipality={selectedMunicipality}
-            setSelectedMunicipality={setSelectedMunicipality}
-            mapLayer={mapLayer}
-            showBiomas={showBiomas}
-            showVegetation={showVegetation}
-          />
-
-          <div className="desktop-right-sidebar">
-            <RightSidebar selectedMunicipality={selectedMunicipality} />
-          </div>
-        </>
-      ) : (
-        <Auth />
-      )}
-
-      {modalState && (
-        <EventModal
-          lat={modalState.lat}
-          lng={modalState.lng}
-          onClose={() => setModalState(null)}
-          onSave={handleSaveEvent}
-          availableTypes={availableTypes}
-          onAddType={handleAddType}
-          userMunicipality={profile?.role === 'CIDADÃO' ? profile?.municipality : undefined}
-        />
-      )}
-
-      {showAdminPanel && <AdminPanel onClose={() => setShowAdminPanel(false)} />}
+        {showAdminPanel && <AdminPanel onClose={() => setShowAdminPanel(false)} />}
       </div>
     </div>
   );

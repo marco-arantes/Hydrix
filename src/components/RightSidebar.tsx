@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Info, Users, Maximize, Hash, DollarSign, Activity, Globe } from 'lucide-react';
 import { getIbgeDataByMunicipalityName, getIbgeMunicipalityStats, getPrefeituraUrl, type IBGEMunicipio, type IBGEStats } from '../utils/ibge';
+import type { MarkerEvent } from '../types';
 
 interface RightSidebarProps {
   selectedMunicipality: string | null;
+  markers: MarkerEvent[];
 }
 
-export const RightSidebar: React.FC<RightSidebarProps> = ({ selectedMunicipality }) => {
+export const RightSidebar: React.FC<RightSidebarProps> = ({ selectedMunicipality, markers }) => {
   const [ibgeData, setIbgeData] = useState<IBGEMunicipio | null>(null);
   const [ibgeStats, setIbgeStats] = useState<IBGEStats | null>(null);
   const [loadingIbge, setLoadingIbge] = useState<boolean>(false);
@@ -31,6 +33,23 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ selectedMunicipality
       setIbgeStats(null);
     }
   }, [selectedMunicipality]);
+
+  const municipalityEvents = React.useMemo(() => {
+    if (!selectedMunicipality) return [];
+    return markers.filter(m => {
+      const normMarker = m.municipality ? m.municipality.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim() : '';
+      const normSelected = selectedMunicipality.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+      return normMarker.includes(normSelected) || normSelected.includes(normMarker);
+    });
+  }, [markers, selectedMunicipality]);
+
+  const eventsByType = React.useMemo(() => {
+    return municipalityEvents.reduce((acc, marker) => {
+      const type = marker.event_type_name || 'Desconhecido';
+      acc[type] = (acc[type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+  }, [municipalityEvents]);
 
   if (!selectedMunicipality) {
     return (
@@ -147,6 +166,27 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ selectedMunicipality
               <Globe size={14} />
               Site do Município
             </a>
+          </div>
+
+          <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #bae6fd' }}>
+            <h4 style={{ fontSize: '0.875rem', color: '#0369a1', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Activity size={14} />
+              Eventos no Município
+            </h4>
+            {Object.keys(eventsByType).length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                {Object.entries(eventsByType)
+                  .sort(([typeA], [typeB]) => typeA.localeCompare(typeB))
+                  .map(([type, count]) => (
+                  <div key={type} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.875rem', color: 'var(--text-primary)' }}>
+                    <span>{type}</span>
+                    <span style={{ fontWeight: 'bold', backgroundColor: '#bfdbfe', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem' }}>{count}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Nenhum evento registrado.</p>
+            )}
           </div>
         </div>
       </div>

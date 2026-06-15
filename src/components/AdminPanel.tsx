@@ -3,6 +3,17 @@ import { supabase } from '../lib/supabase';
 import { createClient } from '@supabase/supabase-js';
 import type { UserRole } from '../types';
 
+const UGRHI4_MUNICIPALITIES = [
+  "Altinópolis", "Batatais", "Brodowski", "Caconde", "Cajuru", "Casa Branca",
+  "Cravinhos", "Cássia dos Coqueiros", "Divinolândia", "Itobi", "Jardinópolis",
+  "Luís Antônio", "Mococa", "Morro Agudo", "Nuporanga", "Orlândia", "Pontal",
+  "Ribeirão Preto", "Sales Oliveira", "Santa Cruz da Esperança", "Santa Cruz das Palmeiras",
+  "Santa Rita do Passa Quatro", "Santa Rosa de Viterbo", "Santo Antônio da Alegria",
+  "Serra Azul", "Serrana", "Sertãozinho", "São João da Boa Vista", "São José do Rio Pardo",
+  "São Sebastião da Grama", "São Simão", "Tambaú", "Tapiratiba", "Vargem Grande do Sul",
+  "Águas da Prata"
+];
+
 export function AdminPanel({ onClose }: { onClose: () => void }) {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -163,7 +174,12 @@ function UserRow({ user, onSave }: { user: any, onSave: (id: string, updates: an
         <input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} style={styles.input} />
       </td>
       <td style={styles.td}>
-        <input type="text" value={municipality} onChange={(e) => setMunicipality(e.target.value)} style={styles.input} />
+        <select value={municipality} onChange={(e) => setMunicipality(e.target.value)} style={styles.select}>
+          <option value="">Selecione...</option>
+          {UGRHI4_MUNICIPALITIES.map(m => (
+            <option key={m} value={m}>{m}</option>
+          ))}
+        </select>
       </td>
       <td style={styles.td}>
         <select value={role} onChange={(e) => setRole(e.target.value as UserRole)} style={styles.select}>
@@ -242,7 +258,12 @@ function CreateUserForm({ onCreated }: { onCreated: () => void }) {
         <input required type="password" placeholder="Senha" value={password} onChange={e => setPassword(e.target.value)} style={styles.input} />
         <input required type="text" placeholder="Nome Completo" value={name} onChange={e => setName(e.target.value)} style={styles.input} />
         <input required type="date" placeholder="Data de Nascimento" value={birthDate} onChange={e => setBirthDate(e.target.value)} style={styles.input} />
-        <input required type="text" placeholder="Município" value={municipality} onChange={e => setMunicipality(e.target.value)} style={styles.input} />
+        <select required value={municipality} onChange={e => setMunicipality(e.target.value)} style={styles.input}>
+          <option value="" disabled>Selecione o Município...</option>
+          {UGRHI4_MUNICIPALITIES.map(m => (
+            <option key={m} value={m}>{m}</option>
+          ))}
+        </select>
       </div>
       <button type="submit" disabled={loading} style={styles.createBtn}>
         {loading ? 'Cadastrando...' : 'Finalizar Cadastro'}

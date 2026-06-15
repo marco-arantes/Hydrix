@@ -215,7 +215,7 @@ export const Sidebar: React.FC<SidebarProps & {
 
         {/* Mobile Right Sidebar Placeholder */}
         <div className="mobile-right-sidebar">
-          <RightSidebar selectedMunicipality={selectedMunicipality} />
+          <RightSidebar selectedMunicipality={selectedMunicipality} markers={markers} />
         </div>
 
         <div style={{ marginTop: 'auto', paddingTop: '20px', borderTop: '1px solid var(--border-color)' }}>

@@ -55,13 +55,21 @@ export async function getIbgeDataByMunicipalityName(name: string): Promise<IBGEM
     // Procura o município (ignorando diferenças de maiúsculas/minúsculas)
     const normalizedSearch = cleanName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
+    // 1. Tenta encontrar o município em SP primeiro (já que o projeto é na bacia do Pardo/SP)
     let found = cachedMunicipios?.find(m => {
       const normalizedName = m.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      return normalizedName === normalizedSearch;
+      return normalizedName === normalizedSearch && m.microrregiao.mesorregiao.UF.sigla === 'SP';
     });
 
-    // Em casos como "Sertãozinho" que existe em SP e PB, se não especificarmos o estado, ele pega o primeiro (PB).
-    // Se a string original continha o estado, podemos tentar usar isso para desempatar:
+    // 2. Se não encontrou em SP, tenta em qualquer estado
+    if (!found) {
+      found = cachedMunicipios?.find(m => {
+        const normalizedName = m.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        return normalizedName === normalizedSearch;
+      });
+    }
+
+    // 3. Se a string original continha o estado, podemos tentar usar isso para desempatar:
     if (name.includes('-') || name.includes(',')) {
       const parts = name.split(/[-,]/);
       if (parts.length > 1) {
