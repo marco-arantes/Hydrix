@@ -21,7 +21,7 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
       const { data: profilesData, error: profilesError } = await supabase.from('user_profiles').select('*');
       if (profilesError) throw profilesError;
 
-      const rolesMap = new Map((rolesData || []).map((r: any) => [r.id, r]));
+      const rolesMap = new Map<string, any>((rolesData || []).map((r: any) => [r.id, r]));
 
       const mergedUsers = (profilesData || []).map((p: any) => ({
         id: p.id,
@@ -269,7 +269,7 @@ const styles = {
     maxWidth: '1200px',
     maxHeight: '90vh',
     display: 'flex',
-    flexDirection: 'column',
+    flexDirection: 'column' as const,
     color: '#fff'
   },
   header: {

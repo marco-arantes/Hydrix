@@ -218,7 +218,7 @@ export const MapArea: React.FC<MapAreaProps> = ({
             >
               <div style={{ padding: '4px' }}>
                 <h3 style={{ margin: '0 0 8px 0', fontSize: '1rem', color: 'var(--primary-color)' }}>
-                  {marker.type}
+                  {marker.event_type_name || 'Desconhecido'}
                 </h3>
                 <p style={{ margin: '4px 0', fontSize: '0.875rem' }}>
                   <strong>Data:</strong> {new Date(marker.date).toLocaleDateString('pt-BR')} às {marker.time}

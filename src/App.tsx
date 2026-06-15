@@ -134,8 +134,11 @@ function App() {
   const handleSaveEvent = async (newEvent: MarkerEvent) => {
     if (!session) return;
     
+    // Strip old/display properties to avoid schema errors from cached clients
+    const { event_type_name, type, ...rest } = newEvent as any;
+    
     // Insert into Supabase
-    const eventToSave = { ...newEvent, user_id: session.user.id };
+    const eventToSave = { ...rest, user_id: session.user.id };
     const { error } = await supabase
       .from('events')
       .insert([eventToSave]);
