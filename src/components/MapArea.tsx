@@ -27,6 +27,7 @@ interface MapAreaProps {
   mapLayer: 'osm' | 'satellite';
   showBiomas: boolean;
   showVegetation: boolean;
+  showBaciasIbge?: boolean;
   onDeleteMarker?: (id: string) => void;
 }
 
@@ -42,7 +43,7 @@ const MapEvents: React.FC<{ onMapClick: (lat: number, lng: number) => void }> = 
 export const MapArea: React.FC<MapAreaProps> = ({
   markers, onMapClick, showUgrhi4, isInsertMode,
   selectedMunicipality, setSelectedMunicipality,
-  mapLayer, showBiomas, showVegetation, onDeleteMarker
+  mapLayer, showBiomas, showVegetation, showBaciasIbge, onDeleteMarker
 }) => {
   // Centro aproximado da Bacia do Pardo (UGRHI-4), perto de Ribeirão Preto
   const defaultCenter: [number, number] = [-21.1, -47.8];
@@ -51,6 +52,7 @@ export const MapArea: React.FC<MapAreaProps> = ({
   const fetched = useRef(new Set<string>());
   const [boundaries, setBoundaries] = useState<Record<string, any>>({});
   const [ugrhiGeoJson, setUgrhiGeoJson] = useState<any>(null);
+  const [baciasIbgeGeoJson, setBaciasIbgeGeoJson] = useState<any>(null);
 
   useEffect(() => {
     if (showUgrhi4 && !ugrhiGeoJson) {
@@ -60,6 +62,15 @@ export const MapArea: React.FC<MapAreaProps> = ({
         .catch(err => console.error('Erro ao carregar UGRHI-4:', err));
     }
   }, [showUgrhi4, ugrhiGeoJson]);
+
+  useEffect(() => {
+    if (showBaciasIbge && !baciasIbgeGeoJson) {
+      fetch('/bacias_ibge.geojson')
+        .then(res => res.json())
+        .then(data => setBaciasIbgeGeoJson(data))
+        .catch(err => console.error('Erro ao carregar Bacias IBGE:', err));
+    }
+  }, [showBaciasIbge, baciasIbgeGeoJson]);
 
   useEffect(() => {
     let active = true;
@@ -199,6 +210,20 @@ export const MapArea: React.FC<MapAreaProps> = ({
               opacity: 0.9,
               fillColor: '#3b82f6',
               fillOpacity: 0.15
+            }}
+          />
+        )}
+
+        {showBaciasIbge && baciasIbgeGeoJson && (
+          <GeoJSON
+            key="bacias-ibge-layer"
+            data={baciasIbgeGeoJson}
+            style={{
+              color: '#0284c7', // light blue border
+              weight: 2,
+              opacity: 0.8,
+              fillColor: '#0ea5e9', // slightly lighter blue fill
+              fillOpacity: 0.1
             }}
           />
         )}

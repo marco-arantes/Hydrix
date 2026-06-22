@@ -25,10 +25,13 @@ export const Sidebar: React.FC<SidebarProps & {
   setShowBiomas: React.Dispatch<React.SetStateAction<boolean>>;
   showVegetation: boolean;
   setShowVegetation: React.Dispatch<React.SetStateAction<boolean>>;
+  showBaciasIbge: boolean;
+  setShowBaciasIbge: React.Dispatch<React.SetStateAction<boolean>>;
 }> = ({ 
   filter, setFilter, markers, availableTypes, showUgrhi4, setShowUgrhi4, 
   isInsertMode, setIsInsertMode, selectedMunicipality, setSelectedMunicipality,
   mapLayer, setMapLayer, showBiomas, setShowBiomas, showVegetation, setShowVegetation,
+  showBaciasIbge, setShowBaciasIbge,
   canExport, onExport
 }) => {
   // Extract unique municipalities from the available events
@@ -209,6 +212,15 @@ export const Sidebar: React.FC<SidebarProps & {
                 style={{ width: 'auto' }}
               />
               Vegetação
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.875rem' }}>
+              <input
+                type="checkbox"
+                checked={showBaciasIbge}
+                onChange={(e) => setShowBaciasIbge(e.target.checked)}
+                style={{ width: 'auto' }}
+              />
+              Bacias Hidrográficas
             </label>
           </div>
         </div>

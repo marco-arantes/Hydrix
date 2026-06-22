@@ -37,6 +37,7 @@ function App() {
   const [mapLayer, setMapLayer] = useLocalStorage<'osm' | 'satellite'>('map-layer', 'osm');
   const [showBiomas, setShowBiomas] = useLocalStorage<boolean>('show-biomas', false);
   const [showVegetation, setShowVegetation] = useLocalStorage<boolean>('show-vegetation', false);
+  const [showBaciasIbge, setShowBaciasIbge] = useLocalStorage<boolean>('show-bacias-ibge', false);
 
   // Auth and Roles
   const [session, setSession] = useState<any>(null);
@@ -294,7 +295,7 @@ function App() {
         </div>
       </div>
 
-      <div className="app-container" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <div className="app-container" style={{ display: 'flex', flex: 1 }}>
 
         {session ? (
           <>
@@ -315,6 +316,8 @@ function App() {
               setShowBiomas={setShowBiomas}
               showVegetation={showVegetation}
               setShowVegetation={setShowVegetation}
+              showBaciasIbge={showBaciasIbge}
+              setShowBaciasIbge={setShowBaciasIbge}
               canExport={canDelete}
               onExport={handleExport}
             />
@@ -330,6 +333,7 @@ function App() {
               mapLayer={mapLayer}
               showBiomas={showBiomas}
               showVegetation={showVegetation}
+              showBaciasIbge={showBaciasIbge}
             />
 
             <div className="desktop-right-sidebar">
