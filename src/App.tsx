@@ -38,6 +38,9 @@ function App() {
   const [showBiomas, setShowBiomas] = useLocalStorage<boolean>('show-biomas', false);
   const [showVegetation, setShowVegetation] = useLocalStorage<boolean>('show-vegetation', false);
   const [showBaciasIbge, setShowBaciasIbge] = useLocalStorage<boolean>('show-bacias-ibge', false);
+  const [showMeso, setShowMeso] = useLocalStorage<boolean>('show-meso', false);
+  const [baciaHeatmap, setBaciaHeatmap] = useLocalStorage<string>('bacia-heatmap', 'none');
+  const [activeBacias, setActiveBacias] = useLocalStorage<string[]>('active-bacias', []);
 
   // Auth and Roles
   const [session, setSession] = useState<any>(null);
@@ -318,6 +321,12 @@ function App() {
               setShowVegetation={setShowVegetation}
               showBaciasIbge={showBaciasIbge}
               setShowBaciasIbge={setShowBaciasIbge}
+              showMeso={showMeso}
+              setShowMeso={setShowMeso}
+              baciaHeatmap={baciaHeatmap}
+              setBaciaHeatmap={setBaciaHeatmap}
+              activeBacias={activeBacias}
+              setActiveBacias={setActiveBacias}
               canExport={canDelete}
               onExport={handleExport}
             />
@@ -334,6 +343,9 @@ function App() {
               showBiomas={showBiomas}
               showVegetation={showVegetation}
               showBaciasIbge={showBaciasIbge}
+              showMeso={showMeso}
+              baciaHeatmap={baciaHeatmap}
+              activeBacias={activeBacias}
             />
 
             <div className="desktop-right-sidebar">
