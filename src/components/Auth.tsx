@@ -1,6 +1,17 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 
+const UGRHI4_MUNICIPALITIES = [
+  "Altinópolis - SP", "Batatais - SP", "Brodowski - SP", "Caconde - SP", "Cajuru - SP", "Casa Branca - SP",
+  "Cravinhos - SP", "Cássia dos Coqueiros - SP", "Divinolândia - SP", "Itobi - SP", "Jardinópolis - SP",
+  "Luís Antônio - SP", "Mococa - SP", "Morro Agudo - SP", "Nuporanga - SP", "Orlândia - SP", "Pontal - SP",
+  "Ribeirão Preto - SP", "Sales Oliveira - SP", "Santa Cruz da Esperança - SP", "Santa Cruz das Palmeiras - SP",
+  "Santa Rita do Passa Quatro - SP", "Santa Rosa de Viterbo - SP", "Santo Antônio da Alegria - SP",
+  "Serra Azul - SP", "Serrana - SP", "Sertãozinho - SP", "São João da Boa Vista - SP", "São José do Rio Pardo - SP",
+  "São Sebastião da Grama - SP", "São Simão - SP", "Tambaú - SP", "Tapiratiba - SP", "Vargem Grande do Sul - SP",
+  "Águas da Prata - SP"
+];
+
 export function Auth({ onClose }: { onClose?: () => void }) {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
@@ -9,6 +20,25 @@ export function Auth({ onClose }: { onClose?: () => void }) {
   const [birthDate, setBirthDate] = useState('');
   const [municipality, setMunicipality] = useState('');
   const [isLogin, setIsLogin] = useState(true);
+
+  const handleResetPassword = async () => {
+    if (!email) {
+      alert('Por favor, preencha o campo de e-mail acima para receber o link de redefinição.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin,
+      });
+      if (error) throw error;
+      alert('Instruções enviadas! Verifique sua caixa de entrada para redefinir a senha.');
+    } catch (error: any) {
+      alert(error.error_description || error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +52,7 @@ export function Auth({ onClose }: { onClose?: () => void }) {
         });
         if (error) throw error;
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -35,10 +65,22 @@ export function Auth({ onClose }: { onClose?: () => void }) {
           }
         });
         if (error) throw error;
+
+        // If email enumeration protection is on, Supabase returns a fake success but the user's identities array is empty
+        if (data?.user && data.user.identities && data.user.identities.length === 0) {
+          alert('E-mail já cadastrado! Utilize o Esqueci minha senha!');
+          return;
+        }
+
         alert('Cadastro realizado com sucesso! Verifique seu e-mail para confirmar a conta.');
       }
     } catch (error: any) {
-      alert(error.error_description || error.message);
+      const msg = error.error_description || error.message || '';
+      if (!isLogin && (msg.toLowerCase().includes('already registered') || error.code === 'user_already_exists')) {
+        alert('E-mail já cadastrado! Utilize o Esqueci minha senha!');
+      } else {
+        alert(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -78,14 +120,17 @@ export function Auth({ onClose }: { onClose?: () => void }) {
                 onChange={(e) => setBirthDate(e.target.value)}
                 style={styles.input}
               />
-              <input
-                type="text"
-                placeholder="Município"
+              <select
                 value={municipality}
                 required
                 onChange={(e) => setMunicipality(e.target.value)}
                 style={styles.input}
-              />
+              >
+                <option value="" disabled>Selecione seu Município</option>
+                {UGRHI4_MUNICIPALITIES.map(m => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
             </>
           )}
           <input
@@ -101,11 +146,22 @@ export function Auth({ onClose }: { onClose?: () => void }) {
           </button>
         </form>
         <button
+          type="button"
           onClick={() => setIsLogin(!isLogin)}
           style={styles.toggleBtn}
         >
           {isLogin ? 'Não tem conta? Cadastre-se' : 'Já tem conta? Entre'}
         </button>
+        {isLogin && (
+          <button
+            type="button"
+            onClick={handleResetPassword}
+            disabled={loading}
+            style={{ ...styles.toggleBtn, marginTop: '0.5rem', color: '#4facfe' }}
+          >
+            Esqueci minha senha
+          </button>
+        )}
       </div>
     </div>
   );
@@ -167,3 +223,44 @@ const styles = {
     textDecoration: 'underline'
   }
 };
+
+export function UpdatePassword({ onComplete }: { onComplete: () => void }) {
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      alert('Senha atualizada com sucesso!');
+      onComplete();
+    } catch (error: any) {
+      alert(error.error_description || error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="auth-container" style={styles.container}>
+      <div style={styles.card}>
+        <h2 style={styles.title}>Cadastre nova senha</h2>
+        <form onSubmit={handleUpdate} style={styles.form}>
+          <input
+            type="password"
+            placeholder="Nova senha"
+            value={password}
+            required
+            onChange={(e) => setPassword(e.target.value)}
+            style={styles.input}
+          />
+          <button type="submit" disabled={loading} style={styles.button}>
+            {loading ? 'Aguarde...' : 'Salvar Nova Senha'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}

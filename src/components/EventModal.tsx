@@ -19,6 +19,14 @@ const normalizeString = (str?: string | null) => {
   return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 };
 
+const getLocalDateString = () => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export const EventModal: React.FC<EventModalProps> = ({ 
   lat, 
   lng, 
@@ -29,7 +37,7 @@ export const EventModal: React.FC<EventModalProps> = ({
   userMunicipality
 }) => {
   const [typeId, setTypeId] = useState(availableTypes[0]?.id || '');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(getLocalDateString());
   const [time, setTime] = useState(
     new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
   );
@@ -42,7 +50,7 @@ export const EventModal: React.FC<EventModalProps> = ({
   const [newTypeName, setNewTypeName] = useState('');
   const [isLoadingMunicipality, setIsLoadingMunicipality] = useState(lat !== undefined && lng !== undefined);
   const [isSaving, setIsSaving] = useState(false);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [isBlockedMunicipality, setIsBlockedMunicipality] = useState(false);
 
   // Auto-fetch municipality based on Geolocation if lat/lng are provided
   useEffect(() => {
@@ -60,7 +68,9 @@ export const EventModal: React.FC<EventModalProps> = ({
           const normM = normalizeString(m);
           const normU = normalizeString(userMunicipality);
           if (!normM.includes(normU) && !normU.includes(normM)) {
-            setShowConfirmDialog(true);
+            setIsBlockedMunicipality(true);
+          } else {
+            setIsBlockedMunicipality(false);
           }
         }
       }
@@ -74,6 +84,15 @@ export const EventModal: React.FC<EventModalProps> = ({
     if (!typeId && !isCreatingType) {
       alert("Por favor, selecione ou crie um tipo de evento.");
       return;
+    }
+    
+    if (userMunicipality && municipality) {
+      const normM = normalizeString(municipality);
+      const normU = normalizeString(userMunicipality);
+      if (!normM.includes(normU) && !normU.includes(normM)) {
+        alert(`Seu perfil (Cidadão) permite incluir eventos apenas no município de ${userMunicipality}.`);
+        return;
+      }
     }
     
     let finalLat = parseFloat(formLat);
@@ -121,32 +140,24 @@ export const EventModal: React.FC<EventModalProps> = ({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        {showConfirmDialog ? (
+        {isBlockedMunicipality ? (
           <div style={{ textAlign: 'center', padding: '20px' }}>
-            <h2 style={{ marginBottom: '15px', color: '#ef4444' }}>Atenção</h2>
+            <h2 style={{ marginBottom: '15px', color: '#ef4444' }}>Acesso Restrito</h2>
             <p style={{ marginBottom: '20px', fontSize: '1.1rem' }}>
-              Deseja Incluir um Evento para Outro Município? 
+              Seu perfil (Cidadão) permite incluir eventos apenas no seu município.
               <br/><br/>
               <strong>Seu município:</strong> {userMunicipality}
               <br/>
               <strong>Município clicado:</strong> {municipality}
             </p>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '15px' }}>
-              <button 
-                type="button" 
-                className="btn-primary" 
-                onClick={() => setShowConfirmDialog(false)}
-                style={{ padding: '10px 30px' }}
-              >
-                Sim
-              </button>
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
               <button 
                 type="button" 
                 className="btn-outline" 
                 onClick={onClose}
                 style={{ padding: '10px 30px' }}
               >
-                Não
+                Voltar
               </button>
             </div>
           </div>

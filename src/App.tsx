@@ -6,7 +6,7 @@ import { EventModal } from './components/EventModal';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import type { MarkerEvent, FilterState, UserProfile } from './types';
 import { supabase } from './lib/supabase';
-import { Auth } from './components/Auth';
+import { Auth, UpdatePassword } from './components/Auth';
 import { AdminPanel } from './components/AdminPanel';
 import { LogOut, Settings } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -46,6 +46,7 @@ function App() {
   const [session, setSession] = useState<any>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
 
   // Initialize session
   useEffect(() => {
@@ -58,6 +59,11 @@ function App() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      
+      if (_event === 'PASSWORD_RECOVERY') {
+        setIsRecoveryMode(true);
+      }
+
       if (session) {
         fetchProfile(session.user.id, session.user.email || '', session);
       } else {
@@ -117,7 +123,8 @@ function App() {
       if (typesError) {
         console.error('Error fetching event types:', typesError);
       } else if (typesData) {
-        setAvailableTypes(typesData);
+        const sortedTypes = [...typesData].sort((a, b) => a.name.localeCompare(b.name));
+        setAvailableTypes(sortedTypes);
       }
 
       // Fetch markers (events) with joined event_types
@@ -182,7 +189,9 @@ function App() {
       }
 
       if (data) {
-        setAvailableTypes([...availableTypes, data]);
+        const newTypes = [...availableTypes, data];
+        newTypes.sort((a, b) => a.name.localeCompare(b.name));
+        setAvailableTypes(newTypes);
       }
     }
   };
@@ -207,14 +216,10 @@ function App() {
     return markers.filter(marker => {
       // Filter by municipality (ignoring case and accents, checking if one contains the other)
       if (filter.municipality) {
-        // Se for o próprio usuário que criou o evento, ele sempre pode ver (ignora o filtro de município)
-        const isOwner = session && session.user.id === marker.user_id;
-        if (!isOwner) {
-          const normMarker = normalizeString(marker.municipality);
-          const normFilter = normalizeString(filter.municipality);
-          if (!normMarker.includes(normFilter) && !normFilter.includes(normMarker)) {
-            return false;
-          }
+        const normMarker = normalizeString(marker.municipality);
+        const normFilter = normalizeString(filter.municipality);
+        if (!normMarker.includes(normFilter) && !normFilter.includes(normMarker)) {
+          return false;
         }
       }
       // Filter by event type
@@ -279,7 +284,7 @@ function App() {
       <div className="top-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 20px', backgroundColor: '#fff', borderBottom: '1px solid #e2e8f0', zIndex: 1100 }}>
         <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: '#3b82f6' }}>HYDRIX</div>
         <div className="auth-buttons-top" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          {session && (
+          {session && !isRecoveryMode && (
             <>
               <div style={{ fontSize: '0.85rem', color: '#64748b', marginRight: '10px', textAlign: 'right' }}>
                 <div style={{ fontWeight: 600, color: '#334155', marginBottom: '2px' }}>{profile?.name || profile?.email}</div>
@@ -300,7 +305,7 @@ function App() {
 
       <div className="app-container" style={{ display: 'flex', flex: 1 }}>
 
-        {session ? (
+        {session && !isRecoveryMode ? (
           <>
             <Sidebar
               filter={filter}
@@ -352,6 +357,8 @@ function App() {
               <RightSidebar selectedMunicipality={selectedMunicipality} markers={markers} />
             </div>
           </>
+        ) : isRecoveryMode ? (
+          <UpdatePassword onComplete={() => setIsRecoveryMode(false)} />
         ) : (
           <Auth />
         )}

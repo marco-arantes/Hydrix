@@ -4,14 +4,14 @@ import { createClient } from '@supabase/supabase-js';
 import type { UserRole } from '../types';
 
 const UGRHI4_MUNICIPALITIES = [
-  "Altinópolis", "Batatais", "Brodowski", "Caconde", "Cajuru", "Casa Branca",
-  "Cravinhos", "Cássia dos Coqueiros", "Divinolândia", "Itobi", "Jardinópolis",
-  "Luís Antônio", "Mococa", "Morro Agudo", "Nuporanga", "Orlândia", "Pontal",
-  "Ribeirão Preto", "Sales Oliveira", "Santa Cruz da Esperança", "Santa Cruz das Palmeiras",
-  "Santa Rita do Passa Quatro", "Santa Rosa de Viterbo", "Santo Antônio da Alegria",
-  "Serra Azul", "Serrana", "Sertãozinho", "São João da Boa Vista", "São José do Rio Pardo",
-  "São Sebastião da Grama", "São Simão", "Tambaú", "Tapiratiba", "Vargem Grande do Sul",
-  "Águas da Prata"
+  "Altinópolis - SP", "Batatais - SP", "Brodowski - SP", "Caconde - SP", "Cajuru - SP", "Casa Branca - SP",
+  "Cravinhos - SP", "Cássia dos Coqueiros - SP", "Divinolândia - SP", "Itobi - SP", "Jardinópolis - SP",
+  "Luís Antônio - SP", "Mococa - SP", "Morro Agudo - SP", "Nuporanga - SP", "Orlândia - SP", "Pontal - SP",
+  "Ribeirão Preto - SP", "Sales Oliveira - SP", "Santa Cruz da Esperança - SP", "Santa Cruz das Palmeiras - SP",
+  "Santa Rita do Passa Quatro - SP", "Santa Rosa de Viterbo - SP", "Santo Antônio da Alegria - SP",
+  "Serra Azul - SP", "Serrana - SP", "Sertãozinho - SP", "São João da Boa Vista - SP", "São José do Rio Pardo - SP",
+  "São Sebastião da Grama - SP", "São Simão - SP", "Tambaú - SP", "Tapiratiba - SP", "Vargem Grande do Sul - SP",
+  "Águas da Prata - SP"
 ];
 
 export function AdminPanel({ onClose }: { onClose: () => void }) {

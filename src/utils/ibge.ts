@@ -186,8 +186,11 @@ export function getIbgeCidadesUrl(municipio: IBGEMunicipio): string {
  * Exemplo: Ribeirão Preto (SP) -> https://www.ribeiraopreto.sp.gov.br/
  */
 export function getPrefeituraUrl(municipioName: string, uf: string): string {
+  // Extrai apenas o nome da cidade caso venha no formato "Cidade - UF"
+  const cleanName = municipioName.split('-')[0].trim();
+
   // Remove acentos, transforma em minúsculas e remove espaços
-  const slug = municipioName
+  const slug = cleanName
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")

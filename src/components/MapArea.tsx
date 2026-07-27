@@ -324,7 +324,7 @@ export const MapArea: React.FC<MapAreaProps> = ({
                   {marker.event_type_name || 'Desconhecido'}
                 </h3>
                 <p style={{ margin: '4px 0', fontSize: '0.875rem' }}>
-                  <strong>Data:</strong> {new Date(marker.date).toLocaleDateString('pt-BR')} às {marker.time}
+                  <strong>Data:</strong> {marker.date ? marker.date.split('-').reverse().join('/') : ''} às {marker.time}
                 </p>
                 <p style={{ margin: '4px 0', fontSize: '0.875rem' }}>
                   <strong>Local:</strong> {marker.municipality}
