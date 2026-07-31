@@ -8,7 +8,7 @@ import type { MarkerEvent, FilterState, UserProfile } from './types';
 import { supabase } from './lib/supabase';
 import { Auth, UpdatePassword } from './components/Auth';
 import { AdminPanel } from './components/AdminPanel';
-import { LogOut, Settings } from 'lucide-react';
+import { LogOut, Settings, X, ShieldCheck } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import './index.css';
 
@@ -47,6 +47,8 @@ function App() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
+  const [showInstitucional, setShowInstitucional] = useState(false);
+  const [showContato, setShowContato] = useState(false);
 
   // Initialize session
   useEffect(() => {
@@ -59,7 +61,7 @@ function App() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      
+
       if (_event === 'PASSWORD_RECOVERY') {
         setIsRecoveryMode(true);
       }
@@ -304,7 +306,11 @@ function App() {
   return (
     <div className="app-wrapper" style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100vh' }}>
       <div className="top-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 20px', backgroundColor: '#fff', borderBottom: '1px solid #e2e8f0', zIndex: 1100 }}>
-        <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: '#3b82f6' }}>HYDRIX</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: '#3b82f6' }}>HYDRIX</div>
+          <button onClick={() => setShowInstitucional(true)} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '0.9rem', padding: '4px 8px', fontWeight: 600 }}>Institucional</button>
+          <button onClick={() => setShowContato(true)} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '0.9rem', padding: '4px 8px', fontWeight: 600 }}>Contato</button>
+        </div>
         <div className="auth-buttons-top" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           {session && !isRecoveryMode && (
             <>
@@ -358,6 +364,8 @@ function App() {
               userMunicipality={profile?.municipality}
               canExport={canDelete}
               onExport={handleExport}
+              onShowInstitucional={() => setShowInstitucional(true)}
+              onShowContato={() => setShowContato(true)}
             />
 
             <MapArea
@@ -400,6 +408,62 @@ function App() {
         )}
 
         {showAdminPanel && <AdminPanel onClose={() => setShowAdminPanel(false)} />}
+
+        {showInstitucional && (
+          <div className="modal-overlay" onClick={() => setShowInstitucional(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+              <div className="modal-header">
+                <h2>Institucional</h2>
+                <button type="button" className="close-btn" onClick={() => setShowInstitucional(false)}>
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="modal-body" style={{ padding: '20px' }}>
+                <p style={{ fontSize: '1.1rem', lineHeight: '1.5', margin: 0, marginBottom: '20px' }}>
+                  Este é um projeto de doutorado do Programa de Pós-Graduação em Tecnologia Ambiental da Unaerp e Propõe o registro de Eventos Críticos Hídricos.
+                </p>
+                <div style={{ marginTop: '20px', padding: '15px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', display: 'flex', gap: '15px', alignItems: 'flex-start' }}>
+                  <ShieldCheck size={28} color="#16a34a" style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <div>
+                    <h3 style={{ margin: '0 0 5px 0', fontSize: '1rem', color: '#166534' }}>Proteção Intelectual Ativa</h3>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: '#15803d', lineHeight: '1.4' }}>
+                      Este software encontra-se em processo de registro no INPI. O acesso é restrito e monitorado para proteção de propriedade intelectual.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showContato && (
+          <div className="modal-overlay" onClick={() => setShowContato(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+              <div className="modal-header">
+                <h2>Contato</h2>
+                <button type="button" className="close-btn" onClick={() => setShowContato(false)}>
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="modal-body" style={{ padding: '20px' }}>
+                <p style={{ marginBottom: '15px' }}>
+                  <span style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '1.1rem' }}>Contato:</span>
+                  <strong>Marco Aurélio Arantes</strong><br />
+                  E-mail: <a href="mailto:marantes@unaerp.br">marantes@unaerp.br</a>
+                </p>
+                <p style={{ margin: 0 }}>
+                  <strong>Prof. Dr. Murilo Daniel De Mello Innocentini</strong><br />
+                  E-mail: <a href="mailto:minnocentini@unaerp.br">minnocentini@unaerp.br</a><br />
+                </p>
+                <p style={{ margin: 0 }}>
+                  <strong>Programa de Pós-Graduação em Tecnologia Ambiental</strong><br />
+                  Universidade de Ribeirão Preto - Unaerp<br />
+                  Telefone: (16) 3603-7010
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

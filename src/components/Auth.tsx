@@ -12,7 +12,11 @@ const UGRHI4_MUNICIPALITIES = [
   "Águas da Prata - SP"
 ];
 
-export function Auth({ onClose }: { onClose?: () => void }) {
+export function Auth({ 
+  onClose
+}: { 
+  onClose?: () => void
+}) {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -87,81 +91,113 @@ export function Auth({ onClose }: { onClose?: () => void }) {
   };
 
   return (
-    <div className="auth-container" style={styles.container}>
-      <div style={styles.card}>
-        {onClose && (
-          <button type="button" onClick={onClose} style={{ float: 'right', background: 'none', border: 'none', color: '#fff', fontSize: '1.5rem', cursor: 'pointer', marginTop: '-10px', marginRight: '-10px' }}>&times;</button>
-        )}
-        <h2 style={styles.title}>{isLogin ? 'Entrar no Sistema' : 'Criar Conta'}</h2>
-        <form onSubmit={handleAuth} style={styles.form}>
-          <input
-            type="email"
-            placeholder="Seu e-mail"
-            value={email}
-            required
-            onChange={(e) => setEmail(e.target.value)}
-            style={styles.input}
-          />
-          {!isLogin && (
-            <>
-              <input
-                type="text"
-                placeholder="Seu Nome Completo"
-                value={name}
-                required
-                onChange={(e) => setName(e.target.value)}
-                style={styles.input}
-              />
-              <input
-                type="date"
-                placeholder="Data de Nascimento"
-                value={birthDate}
-                required
-                onChange={(e) => setBirthDate(e.target.value)}
-                style={styles.input}
-              />
-              <select
-                value={municipality}
-                required
-                onChange={(e) => setMunicipality(e.target.value)}
-                style={styles.input}
-              >
-                <option value="" disabled>Selecione seu Município</option>
-                {UGRHI4_MUNICIPALITIES.map(m => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-            </>
-          )}
-          <input
-            type="password"
-            placeholder="Sua senha"
-            value={password}
-            required
-            onChange={(e) => setPassword(e.target.value)}
-            style={styles.input}
-          />
-          <button type="submit" disabled={loading} style={styles.button}>
-            {loading ? 'Aguarde...' : (isLogin ? 'Entrar' : 'Cadastrar')}
-          </button>
-        </form>
-        <button
-          type="button"
-          onClick={() => setIsLogin(!isLogin)}
-          style={styles.toggleBtn}
-        >
-          {isLogin ? 'Não tem conta? Cadastre-se' : 'Já tem conta? Entre'}
-        </button>
-        {isLogin && (
+    <div className="auth-layout">
+      <div className="auth-left">
+        <h1 style={{ textAlign: 'center', marginBottom: '1.5rem', fontWeight: 700 }}>
+          <span style={{ display: 'block', color: '#d97706', fontSize: '2.8rem', marginBottom: '0.5rem' }}>Hydrix</span>
+          <span style={{ display: 'block', color: '#1e293b', fontSize: '1.4rem', fontWeight: 500 }}>Monitoramento colaborativo de eventos hídricos críticos.</span>
+        </h1>
+        
+        <div className="auth-logos">
+          <a href="https://www.unaerp.br/" target="_blank" rel="noopener noreferrer">
+            <img src="/unaerp-logo.png" alt="Logotipo Unaerp" className="auth-logo" />
+          </a>
+          <a href="https://unaerp.br/pos-graduacao-stricto-sensu/tecnologia-ambiental/" target="_blank" rel="noopener noreferrer">
+            <img src="/ppgta-logo.png" alt="Logotipo PPGTA-Unaerp" className="auth-logo" />
+          </a>
+        </div>
+
+        <div style={{ marginTop: '2rem', color: '#475569', fontSize: '0.95rem', lineHeight: '1.6' }}>
+          <h2 style={{ fontSize: '1.2rem', color: '#1e293b', marginBottom: '1rem', fontWeight: 700 }}>Contato:</h2>
+          <p style={{ marginBottom: '1.5rem' }}>
+            <strong>Marco Aurélio Arantes</strong><br />
+            E-mail: <a href="mailto:marantes@unaerp.br" style={{ color: '#3b82f6', textDecoration: 'none' }}>marantes@unaerp.br</a>
+          </p>
+          <p style={{ marginBottom: '1.5rem' }}>
+            <strong>Prof. Dr. Murilo Daniel De Mello Innocentini</strong><br />
+            E-mail: <a href="mailto:minnocentini@unaerp.br" style={{ color: '#3b82f6', textDecoration: 'none' }}>minnocentini@unaerp.br</a>
+          </p>
+          <p>
+            <strong>Programa de Pós-Graduação em Tecnologia Ambiental</strong><br />
+            Universidade de Ribeirão Preto - Unaerp<br />
+            Telefone: (16) 3603-7010
+          </p>
+        </div>
+      </div>
+      
+      <div className="auth-right">
+        <div style={styles.card}>
+          <h2 style={styles.title}>{isLogin ? 'Entrar no Sistema' : 'Criar Conta'}</h2>
+          <form onSubmit={handleAuth} style={styles.form}>
+            <input
+              type="email"
+              placeholder="Seu e-mail"
+              value={email}
+              required
+              onChange={(e) => setEmail(e.target.value)}
+              style={styles.input}
+            />
+            {!isLogin && (
+              <>
+                <input
+                  type="text"
+                  placeholder="Seu Nome Completo"
+                  value={name}
+                  required
+                  onChange={(e) => setName(e.target.value)}
+                  style={styles.input}
+                />
+                <input
+                  type="date"
+                  placeholder="Data de Nascimento"
+                  value={birthDate}
+                  required
+                  onChange={(e) => setBirthDate(e.target.value)}
+                  style={styles.input}
+                />
+                <select
+                  value={municipality}
+                  required
+                  onChange={(e) => setMunicipality(e.target.value)}
+                  style={styles.input}
+                >
+                  <option value="" disabled>Selecione seu Município</option>
+                  {UGRHI4_MUNICIPALITIES.map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </>
+            )}
+            <input
+              type="password"
+              placeholder="Sua senha"
+              value={password}
+              required
+              onChange={(e) => setPassword(e.target.value)}
+              style={styles.input}
+            />
+            <button type="submit" disabled={loading} style={styles.button}>
+              {loading ? 'Aguarde...' : (isLogin ? 'Entrar' : 'Cadastrar')}
+            </button>
+          </form>
           <button
             type="button"
-            onClick={handleResetPassword}
-            disabled={loading}
-            style={{ ...styles.toggleBtn, marginTop: '0.5rem', color: '#4facfe' }}
+            onClick={() => setIsLogin(!isLogin)}
+            style={styles.toggleBtn}
           >
-            Esqueci minha senha
+            {isLogin ? 'Não tem conta? Cadastre-se' : 'Já tem conta? Entre'}
           </button>
-        )}
+          {isLogin && (
+            <button
+              type="button"
+              onClick={handleResetPassword}
+              disabled={loading}
+              style={{ ...styles.toggleBtn, marginTop: '0.5rem', color: '#3b82f6' }}
+            >
+              Esqueci minha senha
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -178,49 +214,56 @@ const styles = {
     color: '#fff'
   },
   card: {
-    padding: '2rem',
-    backgroundColor: '#2d2d2d',
-    borderRadius: '8px',
-    boxShadow: '0 4px 6px rgba(0,0,0,0.3)',
+    padding: '2.5rem',
+    backgroundColor: '#f3f4f6', /* Light gray background */
+    borderRadius: '12px',
+    boxShadow: '0 10px 25px rgba(0,0,0,0.05)',
+    border: '1px solid #e5e7eb',
     width: '100%',
-    maxWidth: '400px'
+    maxWidth: '450px'
   },
   title: {
     textAlign: 'center' as const,
-    marginBottom: '1.5rem',
-    color: '#4facfe'
+    marginBottom: '2rem',
+    color: '#1e293b',
+    fontWeight: 700
   },
   form: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '1rem'
+    gap: '1.25rem'
   },
   input: {
     padding: '0.75rem',
-    borderRadius: '4px',
-    border: '1px solid #444',
-    backgroundColor: '#3d3d3d',
-    color: '#fff',
-    fontSize: '1rem'
+    borderRadius: '6px',
+    border: '1px solid #cbd5e1',
+    backgroundColor: '#fff',
+    color: '#334155',
+    fontSize: '1rem',
+    transition: 'border-color 0.2s ease',
+    outline: 'none'
   },
   button: {
-    padding: '0.75rem',
-    borderRadius: '4px',
+    padding: '0.875rem',
+    borderRadius: '6px',
     border: 'none',
-    backgroundColor: '#4facfe',
+    backgroundColor: '#3b82f6',
     color: '#fff',
     fontSize: '1rem',
     fontWeight: 'bold',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    marginTop: '0.5rem',
+    transition: 'background-color 0.2s ease'
   },
   toggleBtn: {
-    marginTop: '1rem',
+    marginTop: '1.5rem',
     background: 'none',
     border: 'none',
-    color: '#bbb',
+    color: '#64748b',
     cursor: 'pointer',
     width: '100%',
-    textDecoration: 'underline'
+    fontSize: '0.9rem',
+    textDecoration: 'none'
   }
 };
 

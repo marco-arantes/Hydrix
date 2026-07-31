@@ -392,3 +392,57 @@ input:focus, select:focus, textarea:focus {
     gap: 0.5rem;
   }
 }
+.auth-layout {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  background-color: #f8fafc;
+}
+
+.auth-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4rem;
+  background: radial-gradient(circle at top left, #e0f2fe, #bae6fd, #7dd3fc);
+  border-right: 1px solid #bae6fd;
+}
+
+.auth-right {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #ffffff;
+}
+
+.auth-logos {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+  align-items: center;
+}
+
+.auth-logo {
+  max-width: 150px;
+  height: auto;
+  border-radius: 8px;
+  transition: transform 0.2s;
+}
+
+.auth-logo:hover {
+  transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+  .auth-layout {
+    flex-direction: column;
+  }
+  .auth-left, .auth-right {
+    width: 100%;
+    padding: 2rem;
+  }
+}

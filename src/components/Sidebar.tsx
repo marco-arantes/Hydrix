@@ -20,6 +20,8 @@ interface SidebarProps {
   setActiveBacias: React.Dispatch<React.SetStateAction<string[]>>;
   userRole?: string;
   userMunicipality?: string | null;
+  onShowInstitucional?: () => void;
+  onShowContato?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps & {
@@ -44,6 +46,7 @@ export const Sidebar: React.FC<SidebarProps & {
   baciaHeatmap, setBaciaHeatmap,
   activeBacias, setActiveBacias,
   userRole, userMunicipality,
+  onShowInstitucional, onShowContato,
   canExport, onExport
 }) => {
   const [baciaList, setBaciaList] = React.useState<string[]>([]);
@@ -367,6 +370,14 @@ export const Sidebar: React.FC<SidebarProps & {
               ? "Clique em qualquer lugar no mapa para adicionar um novo registro de evento crítico."
               : "Clique em qualquer lugar no mapa para ver o contorno daquele município."}
           </p>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', marginTop: '15px' }}>
+            {onShowInstitucional && (
+              <button onClick={onShowInstitucional} style={{ background: 'none', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', fontSize: '0.85rem', textDecoration: 'underline', padding: 0 }}>Institucional</button>
+            )}
+            {onShowContato && (
+              <button onClick={onShowContato} style={{ background: 'none', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', fontSize: '0.85rem', textDecoration: 'underline', padding: 0 }}>Contato</button>
+            )}
+          </div>
         </div>
       </div>
     </aside>
