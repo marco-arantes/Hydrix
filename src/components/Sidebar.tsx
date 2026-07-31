@@ -18,6 +18,8 @@ interface SidebarProps {
   onExport: (format: 'csv' | 'xlsx') => void;
   activeBacias: string[];
   setActiveBacias: React.Dispatch<React.SetStateAction<string[]>>;
+  userRole?: string;
+  userMunicipality?: string | null;
 }
 
 export const Sidebar: React.FC<SidebarProps & {
@@ -41,6 +43,7 @@ export const Sidebar: React.FC<SidebarProps & {
   showMeso, setShowMeso,
   baciaHeatmap, setBaciaHeatmap,
   activeBacias, setActiveBacias,
+  userRole, userMunicipality,
   canExport, onExport
 }) => {
   const [baciaList, setBaciaList] = React.useState<string[]>([]);
@@ -91,21 +94,39 @@ export const Sidebar: React.FC<SidebarProps & {
 
         <div className="filter-group">
           <label htmlFor="municipalityFilter">Município</label>
-          <select
-            id="municipalityFilter"
-            value={filter.municipality}
-            onChange={(e) => {
-              setFilter({ ...filter, municipality: e.target.value });
-              setSelectedMunicipality(e.target.value || null);
-            }}
-          >
-            <option value="">Todos os municípios</option>
-            {uniqueMunicipalities.map((mun) => (
-              <option key={mun} value={mun}>
-                {mun}
-              </option>
-            ))}
-          </select>
+          {userRole === 'CIDADÃO' ? (
+            <input
+              type="text"
+              id="municipalityFilter"
+              value={userMunicipality || ''}
+              disabled
+              style={{
+                width: '100%',
+                padding: '8px',
+                borderRadius: '4px',
+                border: '1px solid var(--border-color)',
+                backgroundColor: '#f1f5f9',
+                color: 'var(--text-secondary)',
+                cursor: 'not-allowed'
+              }}
+            />
+          ) : (
+            <select
+              id="municipalityFilter"
+              value={filter.municipality}
+              onChange={(e) => {
+                setFilter({ ...filter, municipality: e.target.value });
+                setSelectedMunicipality(e.target.value || null);
+              }}
+            >
+              <option value="">Todos os municípios</option>
+              {uniqueMunicipalities.map((mun) => (
+                <option key={mun} value={mun}>
+                  {mun}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
         <div className="filter-group">

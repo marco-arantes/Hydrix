@@ -254,7 +254,29 @@ function App() {
       return dateStr;
     };
 
-    const dataToExport = filteredMarkers.map(m => ({
+    const sortedMarkers = [...filteredMarkers].sort((a, b) => {
+      const munA = a.municipality || '';
+      const munB = b.municipality || '';
+      if (munA !== munB) return munA.localeCompare(munB);
+
+      const dateA = a.date || '';
+      const dateB = b.date || '';
+      if (dateA !== dateB) return dateA.localeCompare(dateB);
+
+      const timeA = a.time || '';
+      const timeB = b.time || '';
+      if (timeA !== timeB) return timeA.localeCompare(timeB);
+
+      const typeA = a.event_type_name || '';
+      const typeB = b.event_type_name || '';
+      if (typeA !== typeB) return typeA.localeCompare(typeB);
+
+      const userA = a.user_id ? (profileMap.get(a.user_id) || '') : '';
+      const userB = b.user_id ? (profileMap.get(b.user_id) || '') : '';
+      return userA.localeCompare(userB);
+    });
+
+    const dataToExport = sortedMarkers.map(m => ({
       'ID': m.id,
       'Tipo de Evento': m.event_type_name || 'Desconhecido',
       'Município': m.municipality,
@@ -332,6 +354,8 @@ function App() {
               setBaciaHeatmap={setBaciaHeatmap}
               activeBacias={activeBacias}
               setActiveBacias={setActiveBacias}
+              userRole={profile?.role}
+              userMunicipality={profile?.municipality}
               canExport={canDelete}
               onExport={handleExport}
             />

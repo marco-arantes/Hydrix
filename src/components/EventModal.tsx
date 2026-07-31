@@ -249,8 +249,10 @@ export const EventModal: React.FC<EventModalProps> = ({
                 required 
                 value={municipality} 
                 onChange={(e) => setMunicipality(e.target.value)}
+                disabled={!!userMunicipality}
                 placeholder={isLoadingMunicipality ? "Buscando localização..." : "Digite o município"}
                 className={isLoadingMunicipality ? "loading-pulse" : ""}
+                style={userMunicipality ? { backgroundColor: '#f1f5f9', cursor: 'not-allowed', color: 'var(--text-secondary)' } : {}}
               />
             </div>
 
