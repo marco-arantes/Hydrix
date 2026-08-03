@@ -90,7 +90,7 @@ export function Auth() {
     <div className="auth-layout">
       <div className="auth-left">
         <h1 style={{ textAlign: 'center', marginBottom: '1.5rem', fontWeight: 700 }}>
-          <span style={{ display: 'block', color: '#d9d506ff', fontSize: '2.8rem', marginBottom: '0.5rem' }}>Hydrix</span>
+          <span style={{ display: 'block', color: '#fffb03ff', fontSize: '2.8rem', marginBottom: '0.5rem' }}>Hydrix</span>
           <span style={{ display: 'block', color: '#1e293b', fontSize: '1.4rem', fontWeight: 500 }}>Monitoramento colaborativo de eventos hídricos críticos.</span>
         </h1>
 
