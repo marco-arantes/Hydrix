@@ -452,7 +452,7 @@ function App() {
                   E-mail: <a href="mailto:marantes@unaerp.br">marantes@unaerp.br</a>
                 </p>
                 <p style={{ margin: 0 }}>
-                  <strong>Prof. Dr. Murilo Daniel De Mello Innocentini</strong><br />
+                  <strong>Prof. Dr. Murilo Daniel de Mello Innocentini</strong><br />
                   E-mail: <a href="mailto:minnocentini@unaerp.br">minnocentini@unaerp.br</a><br />
                 </p>
                 <p style={{ margin: 0 }}>

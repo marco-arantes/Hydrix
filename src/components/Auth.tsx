@@ -12,11 +12,7 @@ const UGRHI4_MUNICIPALITIES = [
   "Águas da Prata - SP"
 ];
 
-export function Auth({ 
-  onClose
-}: { 
-  onClose?: () => void
-}) {
+export function Auth() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -94,10 +90,10 @@ export function Auth({
     <div className="auth-layout">
       <div className="auth-left">
         <h1 style={{ textAlign: 'center', marginBottom: '1.5rem', fontWeight: 700 }}>
-          <span style={{ display: 'block', color: '#d97706', fontSize: '2.8rem', marginBottom: '0.5rem' }}>Hydrix</span>
+          <span style={{ display: 'block', color: '#d9d506ff', fontSize: '2.8rem', marginBottom: '0.5rem' }}>Hydrix</span>
           <span style={{ display: 'block', color: '#1e293b', fontSize: '1.4rem', fontWeight: 500 }}>Monitoramento colaborativo de eventos hídricos críticos.</span>
         </h1>
-        
+
         <div className="auth-logos">
           <a href="https://www.unaerp.br/" target="_blank" rel="noopener noreferrer">
             <img src="/unaerp-logo.png" alt="Logotipo Unaerp" className="auth-logo" />
@@ -114,7 +110,7 @@ export function Auth({
             E-mail: <a href="mailto:marantes@unaerp.br" style={{ color: '#3b82f6', textDecoration: 'none' }}>marantes@unaerp.br</a>
           </p>
           <p style={{ marginBottom: '1.5rem' }}>
-            <strong>Prof. Dr. Murilo Daniel De Mello Innocentini</strong><br />
+            <strong>Prof. Dr. Murilo Daniel de Mello Innocentini</strong><br />
             E-mail: <a href="mailto:minnocentini@unaerp.br" style={{ color: '#3b82f6', textDecoration: 'none' }}>minnocentini@unaerp.br</a>
           </p>
           <p>
@@ -124,7 +120,7 @@ export function Auth({
           </p>
         </div>
       </div>
-      
+
       <div className="auth-right">
         <div style={styles.card}>
           <h2 style={styles.title}>{isLogin ? 'Entrar no Sistema' : 'Criar Conta'}</h2>
