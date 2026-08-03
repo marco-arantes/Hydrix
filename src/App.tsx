@@ -420,7 +420,7 @@ function App() {
               </div>
               <div className="modal-body" style={{ padding: '20px' }}>
                 <p style={{ fontSize: '1.1rem', lineHeight: '1.5', margin: 0, marginBottom: '20px' }}>
-                  Este é um projeto de doutorado do Programa de Pós-Graduação em Tecnologia Ambiental da Unaerp e Propõe o registro de Eventos Críticos Hídricos.
+                  Este é um projeto de doutorado do Programa de Pós-Graduação em Tecnologia Ambiental da Universidade de Ribeirão Preto (Unaerp). A pesquisa propõe o desenvolvimento de uma plataforma para o registro, monitoramento e gestão de Eventos Críticos Hídricos, contribuindo para o fortalecimento da governança dos recursos hídricos. Utilizando tecnologias digitais e Sistemas de Informações Geográficas (SIG) para apoiar a tomada de decisão e comunicação educativa e ambiental. O projeto tem como área piloto o município de Ribeirão Preto, inserido na UGRHI 4 – Bacia do Rio Pardo, região de grande importância para o abastecimento, a agricultura e o desenvolvimento econômico. Oferecendo um modelo que poderá ser expandido para os demais municípios da Bacia do Pardo.
                 </p>
                 <div style={{ marginTop: '20px', padding: '15px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', display: 'flex', gap: '15px', alignItems: 'flex-start' }}>
                   <ShieldCheck size={28} color="#16a34a" style={{ flexShrink: 0, marginTop: '2px' }} />
