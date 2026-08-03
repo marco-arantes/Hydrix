@@ -307,7 +307,7 @@ function App() {
     <div className="app-wrapper" style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100vh' }}>
       <div className="top-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 20px', backgroundColor: '#fff', borderBottom: '1px solid #e2e8f0', zIndex: 1100 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: '#3b82f6' }}>HYDRIX</div>
+          <div style={{ fontWeight: 800, fontSize: '1.8rem', color: '#3b82f6', textShadow: '1px 1px 0px #2563eb, 2px 2px 0px #1d4ed8, 3px 3px 0px #1e40af, 4px 4px 8px rgba(0, 0, 0, 0.4)' }}>Hydrix</div>
           <button onClick={() => setShowInstitucional(true)} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '0.9rem', padding: '4px 8px', fontWeight: 600 }}>Institucional</button>
           <button onClick={() => setShowContato(true)} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '0.9rem', padding: '4px 8px', fontWeight: 600 }}>Contato</button>
         </div>
