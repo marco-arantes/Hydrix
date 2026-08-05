@@ -33,15 +33,17 @@
 body, html {
   width: 100%;
   height: 100%;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   background-color: var(--bg-color);
   color: var(--text-primary);
 }
 
 #root {
   width: 100%;
-  height: 100vh;
+  min-height: 100%;
   display: flex;
+  flex-direction: column;
 }
 
 /* Base UI Components */
@@ -105,8 +107,8 @@ input:focus, select:focus, textarea:focus {
 .app-container {
   display: flex;
   width: 100%;
-  height: 100%;
-  overflow: hidden;
+  min-height: 100vh;
+  flex: 1;
 }
 
 .auth-buttons {
