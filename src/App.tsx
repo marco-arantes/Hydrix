@@ -305,17 +305,17 @@ function App() {
 
   return (
     <div className="app-wrapper" style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100vh' }}>
-      <div className="top-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 20px', backgroundColor: '#fff', borderBottom: '1px solid #e2e8f0', zIndex: 1100 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <div style={{ fontWeight: 800, fontSize: '1.8rem', color: '#3b82f6', textShadow: '1px 1px 0px #2563eb, 2px 2px 0px #1d4ed8, 3px 3px 0px #1e40af, 4px 4px 8px rgba(0, 0, 0, 0.4)' }}>Hydrix</div>
-          <button onClick={() => setShowInstitucional(true)} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '0.9rem', padding: '4px 8px', fontWeight: 600 }}>Institucional</button>
-          <button onClick={() => setShowContato(true)} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '0.9rem', padding: '4px 8px', fontWeight: 600 }}>Contato</button>
+      <div className="top-bar">
+        <div className="top-bar-left">
+          <div className="logo-text">Hydrix</div>
+          <button onClick={() => setShowInstitucional(true)} className="link-button">Institucional</button>
+          <button onClick={() => setShowContato(true)} className="link-button">Contato</button>
         </div>
-        <div className="auth-buttons-top" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+        <div className="auth-buttons-top">
           {session && !isRecoveryMode && (
             <>
-              <div style={{ fontSize: '0.85rem', color: '#64748b', marginRight: '10px', textAlign: 'right' }}>
-                <div style={{ fontWeight: 600, color: '#334155', marginBottom: '2px' }}>{profile?.name || profile?.email}</div>
+              <div className="user-info-text">
+                <div className="user-name">{profile?.name || profile?.email}</div>
                 <div>{profile?.municipality || 'Sem município'} • {profile?.role}</div>
               </div>
               {profile?.role === 'ADMIN' && (
