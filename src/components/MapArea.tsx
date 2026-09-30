@@ -99,11 +99,11 @@ const MapLocker: React.FC<{ lockedPath: string, onFound: (name: string, geojson:
         // 2. Fallback to Nominatim OSM if not in SP or IBGE unavailable
         const searchString = lockedPath.replace(/-/g, ' ');
         const nomUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchString + ', São Paulo, Brazil')}&format=json&polygon_geojson=1`;
-        const nomRes = await fetch(nomUrl, { 
-          headers: { 
+        const nomRes = await fetch(nomUrl, {
+          headers: {
             'Accept-Language': 'pt-BR,pt;q=0.9',
             'User-Agent': 'Hydrix-Eco-App/1.0 (contato@hydrix.eco.br)'
-          } 
+          }
         });
         if (nomRes.ok) {
           const nomData = await nomRes.json();
@@ -195,11 +195,11 @@ export const MapArea: React.FC<MapAreaProps> = ({
 
         try {
           const url = `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(mun)}&country=Brazil&format=json&polygon_geojson=1`;
-          const res = await fetch(url, { 
-            headers: { 
+          const res = await fetch(url, {
+            headers: {
               'Accept-Language': 'pt-BR,pt;q=0.9',
               'User-Agent': 'Hydrix-Eco-App/1.0 (contato@hydrix.eco.br)'
-            } 
+            }
           });
           const data = await res.json();
 
@@ -294,27 +294,27 @@ export const MapArea: React.FC<MapAreaProps> = ({
             zIndex={11}
           />
         )}
-        
+
         {lockedCityPath && (
-          <MapLocker 
-            lockedPath={lockedCityPath} 
+          <MapLocker
+            lockedPath={lockedCityPath}
             onFound={(name, geojson) => {
               setSelectedMunicipality(name);
               setBoundaries(prev => ({
                 ...prev,
                 [name]: geojson
               }));
-            }} 
+            }}
           />
         )}
-        
+
         <MapEvents onMapClick={async (lat, lng) => {
           setSelectedMunicipality(null);
 
           if (isInsertMode) {
             onMapClick(lat, lng);
           }
-          
+
           // Buscar o município clicado e seu contorno em background
           try {
             const munName = await fetchMunicipality(lat, lng);
@@ -325,11 +325,11 @@ export const MapArea: React.FC<MapAreaProps> = ({
               if (!boundaries[munName]) {
                 try {
                   const url = `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(munName)}&country=Brazil&format=json&polygon_geojson=1`;
-                  const res = await fetch(url, { 
-                    headers: { 
+                  const res = await fetch(url, {
+                    headers: {
                       'Accept-Language': 'pt-BR,pt;q=0.9',
                       'User-Agent': 'Hydrix-Eco-App/1.0 (contato@hydrix.eco.br)'
-                    } 
+                    }
                   });
                   const data = await res.json();
 
@@ -384,8 +384,8 @@ export const MapArea: React.FC<MapAreaProps> = ({
             key={`bacias-ibge-layer-${showBaciasIbge}-${activeBacias.join(',')}-${baciaHeatmap}`}
             data={{
               ...baciasIbgeGeoJson,
-              features: showBaciasIbge 
-                ? baciasIbgeGeoJson.features 
+              features: showBaciasIbge
+                ? baciasIbgeGeoJson.features
                 : baciasIbgeGeoJson.features.filter((f: any) => activeBacias.includes(f.properties?.nome_bacia))
             }}
             onEachFeature={(feature, layer) => {
