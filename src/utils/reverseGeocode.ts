@@ -1,9 +1,18 @@
+const reverseGeocodeCache = new Map<string, Promise<string>>();
+
 export async function fetchMunicipality(lat: number, lng: number): Promise<string> {
-  try {
-    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
+  const cacheKey = `${lat},${lng}`;
+  if (reverseGeocodeCache.has(cacheKey)) {
+    return reverseGeocodeCache.get(cacheKey)!;
+  }
+
+  const promise = (async () => {
+    try {
+      const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
     const response = await fetch(url, {
       headers: {
         'Accept-Language': 'pt-BR,pt;q=0.9',
+        'User-Agent': 'Hydrix-Eco-App/1.0 (contato@hydrix.eco.br)'
       }
     });
 
@@ -17,8 +26,13 @@ export async function fetchMunicipality(lat: number, lng: number): Promise<strin
     const address = data.address;
     if (address) {
       // Prioritize some common keys for Brazilian municipalities
-      const city = address.city || address.town || address.village || address.municipality || address.county;
+      let city = address.city || address.town || address.village || address.municipality || address.county;
       if (city) {
+        // Clean common prefixes
+        city = city.replace(/^Município de /i, "")
+                   .replace(/^Cidade de /i, "")
+                   .replace(/^Região Imediata de /i, "")
+                   .trim();
         return city;
       }
     }
@@ -26,7 +40,16 @@ export async function fetchMunicipality(lat: number, lng: number): Promise<strin
   } catch (error) {
     console.error('Error fetching municipality:', error);
     return '';
+  } finally {
+    // Optionally remove from cache after a short time to allow retries on failure, 
+    // or keep it if we want to aggressively cache. We'll remove it after 5 seconds 
+    // so subsequent identical clicks aren't stuck if it failed.
+    setTimeout(() => reverseGeocodeCache.delete(cacheKey), 5000);
   }
+  })();
+
+  reverseGeocodeCache.set(cacheKey, promise);
+  return promise;
 }
 
 export async function geocodeMunicipality(municipality: string): Promise<{ lat: number, lng: number } | null> {
@@ -35,6 +58,7 @@ export async function geocodeMunicipality(municipality: string): Promise<{ lat: 
     const response = await fetch(url, {
       headers: {
         'Accept-Language': 'pt-BR,pt;q=0.9',
+        'User-Agent': 'Hydrix-Eco-App/1.0 (contato@hydrix.eco.br)'
       }
     });
 

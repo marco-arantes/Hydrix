@@ -12,6 +12,15 @@ import { LogOut, Settings, X, ShieldCheck } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import './index.css';
 
+const formatCityPath = (cityString: string) => {
+  const cityOnly = cityString.split('-')[0].trim();
+  return cityOnly
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '-');
+};
+
 const normalizeString = (str?: string | null) => {
   if (!str) return '';
   return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
@@ -49,6 +58,20 @@ function App() {
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
   const [showInstitucional, setShowInstitucional] = useState(false);
   const [showContato, setShowContato] = useState(false);
+  
+  // Locked City state for URL paths
+  const [lockedCityPath, setLockedCityPath] = useState<string | null>(null);
+
+  // Read URL path for locked city
+  useEffect(() => {
+    const path = window.location.pathname.substring(1).trim();
+    // Ignore common non-city paths if any
+    if (path && !path.includes('.') && path.length > 2) {
+      setLockedCityPath(path);
+      // Disable UGRHI-4 by default on city routes
+      setShowUgrhi4(false);
+    }
+  }, []);
 
   // Initialize session
   useEffect(() => {
@@ -109,6 +132,14 @@ function App() {
     if (role !== 'ADMIN' && userMun) {
       setSelectedMunicipality(userMun);
       setFilter(prev => ({ ...prev, municipality: userMun }));
+      
+      const formattedPath = formatCityPath(userMun);
+      setLockedCityPath(formattedPath);
+      setShowUgrhi4(false);
+      
+      if (window.location.pathname !== `/${formattedPath}`) {
+        window.history.pushState({}, '', `/${formattedPath}`);
+      }
     }
   };
 
@@ -383,6 +414,7 @@ function App() {
               showMeso={showMeso}
               baciaHeatmap={baciaHeatmap}
               activeBacias={activeBacias}
+              lockedCityPath={lockedCityPath}
             />
 
             <div className="desktop-right-sidebar">

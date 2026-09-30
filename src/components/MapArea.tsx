@@ -32,6 +32,7 @@ interface MapAreaProps {
   baciaHeatmap: string;
   activeBacias: string[];
   onDeleteMarker?: (id: string) => void;
+  lockedCityPath?: string | null;
 }
 
 const MapEvents: React.FC<{ onMapClick: (lat: number, lng: number) => void }> = ({ onMapClick }) => {
@@ -43,10 +44,105 @@ const MapEvents: React.FC<{ onMapClick: (lat: number, lng: number) => void }> = 
   return null;
 };
 
+const normalizeCitySlug = (str: string) => {
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, '');
+};
+
+const MapLocker: React.FC<{ lockedPath: string, onFound: (name: string, geojson: any) => void }> = ({ lockedPath, onFound }) => {
+  const map = useMapEvents({});
+  const processedPathRef = useRef<string | null>(null);
+  const onFoundRef = useRef(onFound);
+
+  useEffect(() => {
+    onFoundRef.current = onFound;
+  }, [onFound]);
+
+  useEffect(() => {
+    if (!lockedPath || processedPathRef.current === lockedPath) return;
+
+    let isMounted = true;
+    const targetSlug = normalizeCitySlug(lockedPath);
+
+    const fetchCity = async () => {
+      try {
+        // 1. Official IBGE API lookup for SP municipalities
+        const ibgeListRes = await fetch('https://servicodados.ibge.gov.br/api/v1/localidades/estados/35/municipios');
+        if (ibgeListRes.ok) {
+          const ibgeList = await ibgeListRes.json();
+          const foundMuni = ibgeList.find((m: any) => normalizeCitySlug(m.nome) === targetSlug);
+
+          if (foundMuni) {
+            // Fetch municipality vector boundaries from IBGE Malhas API
+            const geoRes = await fetch(`https://servicodados.ibge.gov.br/api/v3/malhas/municipios/${foundMuni.id}?formato=application/vnd.geo+json`);
+            if (geoRes.ok) {
+              const geoJson = await geoRes.json();
+              if (isMounted) {
+                const layer = L.geoJSON(geoJson);
+                const bounds = layer.getBounds();
+                if (bounds.isValid()) {
+                  processedPathRef.current = lockedPath;
+                  map.fitBounds(bounds, { padding: [20, 20] });
+                  map.setMaxBounds(bounds.pad(0.1));
+                  map.setMinZoom(map.getBoundsZoom(bounds) - 1);
+                  onFoundRef.current(foundMuni.nome, geoJson);
+                  return;
+                }
+              }
+            }
+          }
+        }
+
+        // 2. Fallback to Nominatim OSM if not in SP or IBGE unavailable
+        const searchString = lockedPath.replace(/-/g, ' ');
+        const nomUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchString + ', São Paulo, Brazil')}&format=json&polygon_geojson=1`;
+        const nomRes = await fetch(nomUrl, { 
+          headers: { 
+            'Accept-Language': 'pt-BR,pt;q=0.9',
+            'User-Agent': 'Hydrix-Eco-App/1.0 (contato@hydrix.eco.br)'
+          } 
+        });
+        if (nomRes.ok) {
+          const nomData = await nomRes.json();
+          if (nomData && nomData.length > 0 && isMounted) {
+            const item = nomData.find((d: any) => d.type === 'administrative' && d.class === 'boundary') || nomData[0];
+            if (item && item.boundingbox) {
+              const bb = item.boundingbox;
+              const bounds = L.latLngBounds(
+                L.latLng(parseFloat(bb[0]), parseFloat(bb[2])),
+                L.latLng(parseFloat(bb[1]), parseFloat(bb[3]))
+              );
+              if (bounds.isValid()) {
+                processedPathRef.current = lockedPath;
+                map.fitBounds(bounds, { padding: [20, 20] });
+                map.setMaxBounds(bounds.pad(0.1));
+                map.setMinZoom(map.getBoundsZoom(bounds) - 1);
+                onFoundRef.current(item.display_name.split(',')[0].trim(), item.geojson);
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error in MapLocker lookup:", err);
+      }
+    };
+
+    fetchCity();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [lockedPath, map]);
+  return null;
+};
+
 export const MapArea: React.FC<MapAreaProps> = ({
   markers, onMapClick, showUgrhi4, isInsertMode,
   selectedMunicipality, setSelectedMunicipality,
-  mapLayer, showBiomas, showVegetation, showBaciasIbge, showMeso, baciaHeatmap, activeBacias, onDeleteMarker
+  mapLayer, showBiomas, showVegetation, showBaciasIbge, showMeso, baciaHeatmap, activeBacias, onDeleteMarker, lockedCityPath
 }) => {
   // Centro aproximado da Bacia do Pardo (UGRHI-4), perto de Ribeirão Preto
   const defaultCenter: [number, number] = [-21.1, -47.8];
@@ -99,7 +195,12 @@ export const MapArea: React.FC<MapAreaProps> = ({
 
         try {
           const url = `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(mun)}&country=Brazil&format=json&polygon_geojson=1`;
-          const res = await fetch(url, { headers: { 'Accept-Language': 'pt-BR,pt;q=0.9' } });
+          const res = await fetch(url, { 
+            headers: { 
+              'Accept-Language': 'pt-BR,pt;q=0.9',
+              'User-Agent': 'Hydrix-Eco-App/1.0 (contato@hydrix.eco.br)'
+            } 
+          });
           const data = await res.json();
 
           if (active && data && data.length > 0 && data[0].geojson) {
@@ -112,8 +213,8 @@ export const MapArea: React.FC<MapAreaProps> = ({
           console.error("Error fetching boundary for", mun, e);
         }
 
-        // Wait 1.1s to respect Nominatim limits
-        await new Promise(resolve => setTimeout(resolve, 1100));
+        // Wait 1.5s to respect Nominatim limits and allow clicks to pass through
+        await new Promise(resolve => setTimeout(resolve, 1500));
       }
     };
 
@@ -193,13 +294,29 @@ export const MapArea: React.FC<MapAreaProps> = ({
             zIndex={11}
           />
         )}
+        
+        {lockedCityPath && (
+          <MapLocker 
+            lockedPath={lockedCityPath} 
+            onFound={(name, geojson) => {
+              setSelectedMunicipality(name);
+              setBoundaries(prev => ({
+                ...prev,
+                [name]: geojson
+              }));
+            }} 
+          />
+        )}
+        
         <MapEvents onMapClick={async (lat, lng) => {
           setSelectedMunicipality(null);
 
           if (isInsertMode) {
             onMapClick(lat, lng);
-          } else {
-            // Modo de visualização: buscar o município clicado e seu contorno
+          }
+          
+          // Buscar o município clicado e seu contorno em background
+          try {
             const munName = await fetchMunicipality(lat, lng);
             if (munName) {
               setSelectedMunicipality(munName);
@@ -208,7 +325,12 @@ export const MapArea: React.FC<MapAreaProps> = ({
               if (!boundaries[munName]) {
                 try {
                   const url = `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(munName)}&country=Brazil&format=json&polygon_geojson=1`;
-                  const res = await fetch(url, { headers: { 'Accept-Language': 'pt-BR,pt;q=0.9' } });
+                  const res = await fetch(url, { 
+                    headers: { 
+                      'Accept-Language': 'pt-BR,pt;q=0.9',
+                      'User-Agent': 'Hydrix-Eco-App/1.0 (contato@hydrix.eco.br)'
+                    } 
+                  });
                   const data = await res.json();
 
                   if (data && data.length > 0 && data[0].geojson) {
@@ -222,6 +344,8 @@ export const MapArea: React.FC<MapAreaProps> = ({
                 }
               }
             }
+          } catch (error) {
+            console.error("Error in reverse geocoding on click:", error);
           }
         }} />
 
@@ -229,6 +353,7 @@ export const MapArea: React.FC<MapAreaProps> = ({
           <GeoJSON
             key={`boundary-${selectedMunicipality}`}
             data={boundaries[selectedMunicipality]}
+            interactive={false}
             style={{
               color: 'var(--primary-color)',
               weight: 2,
@@ -243,6 +368,7 @@ export const MapArea: React.FC<MapAreaProps> = ({
           <GeoJSON
             key="ugrhi4-layer"
             data={ugrhiGeoJson}
+            interactive={false}
             style={{
               color: '#000080',
               weight: 3,
@@ -314,11 +440,7 @@ export const MapArea: React.FC<MapAreaProps> = ({
               click: () => setSelectedMunicipality(marker.municipality)
             }}
           >
-            <Popup
-              eventHandlers={{
-                remove: () => setSelectedMunicipality(null)
-              }}
-            >
+            <Popup>
               <div style={{ padding: '4px' }}>
                 <h3 style={{ margin: '0 0 8px 0', fontSize: '1rem', color: 'var(--primary-color)' }}>
                   {marker.event_type_name || 'Desconhecido'}
