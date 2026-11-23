@@ -4,7 +4,7 @@ import { RightSidebar } from './components/RightSidebar';
 import { MapArea } from './components/MapArea';
 import { EventModal } from './components/EventModal';
 import { useLocalStorage } from './hooks/useLocalStorage';
-import type { MarkerEvent, FilterState, UserProfile } from './types';
+import type { MarkerEvent, FilterState, UserProfile, EventSeverity, EventStatus } from './types';
 import { supabase } from './lib/supabase';
 import { Auth, UpdatePassword } from './components/Auth';
 import { AdminPanel } from './components/AdminPanel';
@@ -39,7 +39,7 @@ function App() {
 
   const [modalState, setModalState] = useState<{ isOpen: boolean, lat?: number, lng?: number } | null>(null);
   const [showUgrhi4, setShowUgrhi4] = useLocalStorage<boolean>('show-ugrhi4', false);
-  const [isInsertMode, setIsInsertMode] = useLocalStorage<boolean>('is-insert-mode', true);
+  const [isInsertMode, setIsInsertMode] = useState<boolean>(false);
   const [selectedMunicipality, setSelectedMunicipality] = useState<string | null>(null);
 
   // Map layer controls
@@ -96,6 +96,7 @@ function App() {
         setMarkers([]);
         setFilter({ municipality: '', eventType: '', startDate: '', endDate: '' });
         setSelectedMunicipality(null);
+        setIsInsertMode(false);
       }
     });
 
@@ -163,7 +164,7 @@ function App() {
       // Fetch markers (events) with joined event_types
       const { data: eventsData, error: eventsError } = await supabase
         .from('events')
-        .select('id, event_type_id, date, time, observation, municipality, lat, lng, user_id, event_types(name)');
+        .select('id, event_type_id, severity, status, date, time, observation, municipality, lat, lng, user_id, event_types(name)');
 
       if (eventsError) {
         console.error('Error fetching events:', eventsError);
@@ -171,6 +172,8 @@ function App() {
       } else if (eventsData) {
         const formattedEvents = eventsData.map((e: any) => ({
           ...e,
+          severity: e.severity || 'Baixa',
+          status: e.status || 'Aberto',
           event_type_name: e.event_types?.name
         }));
         setMarkers(formattedEvents);
@@ -244,6 +247,36 @@ function App() {
     setMarkers(markers.filter(marker => marker.id !== id));
   };
 
+  const handleUpdateSeverity = async (id: string, severity: EventSeverity) => {
+    const { error } = await supabase
+      .from('events')
+      .update({ severity })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error updating event severity:', error);
+      alert('Erro ao atualizar gravidade do evento: ' + (error.message || JSON.stringify(error)));
+      return;
+    }
+
+    setMarkers(prev => prev.map(m => m.id === id ? { ...m, severity } : m));
+  };
+
+  const handleUpdateStatus = async (id: string, status: EventStatus) => {
+    const { error } = await supabase
+      .from('events')
+      .update({ status })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error updating event status:', error);
+      alert('Erro ao atualizar status do evento: ' + (error.message || JSON.stringify(error)));
+      return;
+    }
+
+    setMarkers(prev => prev.map(m => m.id === id ? { ...m, status } : m));
+  };
+
   // Filter markers based on sidebar state
   const filteredMarkers = useMemo(() => {
     return markers.filter(marker => {
@@ -312,6 +345,8 @@ function App() {
     const dataToExport = sortedMarkers.map(m => ({
       'ID': m.id,
       'Tipo de Evento': m.event_type_name || 'Desconhecido',
+      'Gravidade': m.severity || 'Baixa',
+      'Status': m.status || 'Aberto',
       'Município': m.municipality,
       'Data': formatDate(m.date),
       'Hora': m.time,
@@ -333,6 +368,8 @@ function App() {
   };
 
   const canDelete = profile?.role === 'ADMIN' || profile?.role === 'GESTOR';
+  const canEditSeverity = profile?.role && profile.role !== 'CIDADÃO';
+  const canEditStatus = profile?.role === 'ADMIN' || profile?.role === 'GESTOR';
 
   return (
     <div className="app-wrapper" style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100vh' }}>
@@ -403,6 +440,8 @@ function App() {
               markers={filteredMarkers}
               onMapClick={handleMapClick}
               onDeleteMarker={canDelete ? handleDeleteMarker : undefined}
+              onUpdateSeverity={canEditSeverity ? handleUpdateSeverity : undefined}
+              onUpdateStatus={canEditStatus ? handleUpdateStatus : undefined}
               showUgrhi4={showUgrhi4}
               isInsertMode={isInsertMode}
               selectedMunicipality={selectedMunicipality}

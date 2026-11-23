@@ -1,4 +1,6 @@
 export type UserRole = 'ADMIN' | 'GESTOR' | 'CIDADÃO';
+export type EventSeverity = 'Baixa' | 'Média' | 'Alta';
+export type EventStatus = 'Aberto' | 'Em Atendimento' | 'Resolvido';
 
 export interface UserProfile {
   id: string;
@@ -19,6 +21,8 @@ export interface MarkerEvent {
   lat: number;
   lng: number;
   user_id?: string;
+  severity?: EventSeverity;
+  status?: EventStatus;
 }
 
 export interface FilterState {

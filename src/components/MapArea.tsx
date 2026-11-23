@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, GeoJSON, WMSTileLayer } from 'react-leaflet';
 import L from 'leaflet';
-import type { MarkerEvent } from '../types';
+import type { MarkerEvent, EventSeverity, EventStatus } from '../types';
 import { fetchMunicipality } from '../utils/reverseGeocode';
+import { getIbgeDataByMunicipalityName } from '../utils/ibge';
 
 // Fix for leaflet internal icon missing issues in some environments
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -32,6 +33,8 @@ interface MapAreaProps {
   baciaHeatmap: string;
   activeBacias: string[];
   onDeleteMarker?: (id: string) => void;
+  onUpdateSeverity?: (id: string, severity: EventSeverity) => Promise<void>;
+  onUpdateStatus?: (id: string, status: EventStatus) => Promise<void>;
   lockedCityPath?: string | null;
 }
 
@@ -142,7 +145,7 @@ const MapLocker: React.FC<{ lockedPath: string, onFound: (name: string, geojson:
 export const MapArea: React.FC<MapAreaProps> = ({
   markers, onMapClick, showUgrhi4, isInsertMode,
   selectedMunicipality, setSelectedMunicipality,
-  mapLayer, showBiomas, showVegetation, showBaciasIbge, showMeso, baciaHeatmap, activeBacias, onDeleteMarker, lockedCityPath
+  mapLayer, showBiomas, showVegetation, showBaciasIbge, showMeso, baciaHeatmap, activeBacias, onDeleteMarker, onUpdateSeverity, onUpdateStatus, lockedCityPath
 }) => {
   // Centro aproximado da Bacia do Pardo (UGRHI-4), perto de Ribeirão Preto
   const defaultCenter: [number, number] = [-21.1, -47.8];
@@ -153,6 +156,10 @@ export const MapArea: React.FC<MapAreaProps> = ({
   const [ugrhiGeoJson, setUgrhiGeoJson] = useState<any>(null);
   const [baciasIbgeGeoJson, setBaciasIbgeGeoJson] = useState<any>(null);
   const [mesoGeoJson, setMesoGeoJson] = useState<any>(null);
+  const [editingSeverities, setEditingSeverities] = useState<Record<string, EventSeverity>>({});
+  const [savingSeverityId, setSavingSeverityId] = useState<string | null>(null);
+  const [editingStatuses, setEditingStatuses] = useState<Record<string, EventStatus>>({});
+  const [savingStatusId, setSavingStatusId] = useState<string | null>(null);
 
   useEffect(() => {
     if (showUgrhi4 && !ugrhiGeoJson) {
@@ -321,9 +328,24 @@ export const MapArea: React.FC<MapAreaProps> = ({
             if (munName) {
               setSelectedMunicipality(munName);
 
-              // Se ainda não temos o contorno em cache, buscamos
+              // Se ainda não temos o contorno em cache, buscamos via IBGE (com fallback Nominatim)
               if (!boundaries[munName]) {
                 try {
+                  const ibgeInfo = await getIbgeDataByMunicipalityName(munName);
+                  if (ibgeInfo && ibgeInfo.id) {
+                    const geoRes = await fetch(`https://servicodados.ibge.gov.br/api/v3/malhas/municipios/${ibgeInfo.id}?formato=application/vnd.geo+json`);
+                    if (geoRes.ok) {
+                      const geoJson = await geoRes.json();
+                      if (geoJson) {
+                        setBoundaries(prev => ({
+                          ...prev,
+                          [munName]: geoJson
+                        }));
+                        return;
+                      }
+                    }
+                  }
+
                   const url = `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(munName)}&country=Brazil&format=json&polygon_geojson=1`;
                   const res = await fetch(url, {
                     headers: {
@@ -331,13 +353,14 @@ export const MapArea: React.FC<MapAreaProps> = ({
                       'User-Agent': 'Hydrix-Eco-App/1.0 (contato@hydrix.eco.br)'
                     }
                   });
-                  const data = await res.json();
-
-                  if (data && data.length > 0 && data[0].geojson) {
-                    setBoundaries(prev => ({
-                      ...prev,
-                      [munName]: data[0].geojson
-                    }));
+                  if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.length > 0 && data[0].geojson) {
+                      setBoundaries(prev => ({
+                        ...prev,
+                        [munName]: data[0].geojson
+                      }));
+                    }
                   }
                 } catch (e) {
                   console.error("Error fetching boundary on click for", munName, e);
@@ -454,6 +477,76 @@ export const MapArea: React.FC<MapAreaProps> = ({
                 <p style={{ margin: '4px 0', fontSize: '0.875rem' }}>
                   <strong>Coordenadas:</strong> {marker.lat.toFixed(5)}, {marker.lng.toFixed(5)}
                 </p>
+                <div style={{ margin: '6px 0', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                  <strong>Gravidade:</strong>
+                  {onUpdateSeverity ? (
+                    <>
+                      <select
+                        value={editingSeverities[marker.id] ?? (marker.severity || 'Baixa')}
+                        onChange={(e) => {
+                          const val = e.target.value as EventSeverity;
+                          setEditingSeverities(prev => ({ ...prev, [marker.id]: val }));
+                        }}
+                        style={{ padding: '4px 6px', fontSize: '0.8rem', borderRadius: '4px', border: '1px solid #cbd5e1', width: 'auto' }}
+                      >
+                        <option value="Baixa">Baixa</option>
+                        <option value="Média">Média</option>
+                        <option value="Alta">Alta</option>
+                      </select>
+                      <button
+                        type="button"
+                        disabled={savingSeverityId === marker.id}
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          const newSev = editingSeverities[marker.id] ?? (marker.severity || 'Baixa');
+                          setSavingSeverityId(marker.id);
+                          await onUpdateSeverity(marker.id, newSev);
+                          setSavingSeverityId(null);
+                        }}
+                        style={{ padding: '4px 8px', backgroundColor: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}
+                      >
+                        {savingSeverityId === marker.id ? 'Salvando...' : 'Salvar'}
+                      </button>
+                    </>
+                  ) : (
+                    <span>{marker.severity || 'Baixa'}</span>
+                  )}
+                </div>
+                <div style={{ margin: '6px 0', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                  <strong>Status:</strong>
+                  {onUpdateStatus ? (
+                    <>
+                      <select
+                        value={editingStatuses[marker.id] ?? (marker.status || 'Aberto')}
+                        onChange={(e) => {
+                          const val = e.target.value as EventStatus;
+                          setEditingStatuses(prev => ({ ...prev, [marker.id]: val }));
+                        }}
+                        style={{ padding: '4px 6px', fontSize: '0.8rem', borderRadius: '4px', border: '1px solid #cbd5e1', width: 'auto' }}
+                      >
+                        <option value="Aberto">Aberto</option>
+                        <option value="Em Atendimento">Em Atendimento</option>
+                        <option value="Resolvido">Resolvido</option>
+                      </select>
+                      <button
+                        type="button"
+                        disabled={savingStatusId === marker.id}
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          const newStat = editingStatuses[marker.id] ?? (marker.status || 'Aberto');
+                          setSavingStatusId(marker.id);
+                          await onUpdateStatus(marker.id, newStat);
+                          setSavingStatusId(null);
+                        }}
+                        style={{ padding: '4px 8px', backgroundColor: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}
+                      >
+                        {savingStatusId === marker.id ? 'Salvando...' : 'Salvar'}
+                      </button>
+                    </>
+                  ) : (
+                    <span>{marker.status || 'Aberto'}</span>
+                  )}
+                </div>
                 {marker.observation && (
                   <p style={{ margin: '8px 0 0 0', fontSize: '0.875rem', fontStyle: 'italic', color: 'var(--text-secondary)' }}>
                     "{marker.observation}"

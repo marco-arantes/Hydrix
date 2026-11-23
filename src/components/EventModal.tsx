@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
-import type { MarkerEvent } from '../types';
+import type { MarkerEvent, EventSeverity, EventStatus } from '../types';
 import { fetchMunicipality, geocodeMunicipality } from '../utils/reverseGeocode';
 
 interface EventModalProps {
@@ -27,16 +27,18 @@ const getLocalDateString = () => {
   return `${year}-${month}-${day}`;
 };
 
-export const EventModal: React.FC<EventModalProps> = ({ 
-  lat, 
-  lng, 
-  onClose, 
-  onSave, 
-  availableTypes, 
+export const EventModal: React.FC<EventModalProps> = ({
+  lat,
+  lng,
+  onClose,
+  onSave,
+  availableTypes,
   onAddType,
   userMunicipality
 }) => {
   const [typeId, setTypeId] = useState(availableTypes[0]?.id || '');
+  const [severity, setSeverity] = useState<EventSeverity>('Baixa');
+  const [status] = useState<EventStatus>('Aberto');
   const [date, setDate] = useState(getLocalDateString());
   const [time, setTime] = useState(
     new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
@@ -45,7 +47,7 @@ export const EventModal: React.FC<EventModalProps> = ({
   const [municipality, setMunicipality] = useState('');
   const [formLat, setFormLat] = useState(lat !== undefined ? String(lat) : '');
   const [formLng, setFormLng] = useState(lng !== undefined ? String(lng) : '');
-  
+
   const [isCreatingType, setIsCreatingType] = useState(false);
   const [newTypeName, setNewTypeName] = useState('');
   const [isLoadingMunicipality, setIsLoadingMunicipality] = useState(lat !== undefined && lng !== undefined);
@@ -55,7 +57,7 @@ export const EventModal: React.FC<EventModalProps> = ({
   // Auto-fetch municipality based on Geolocation if lat/lng are provided
   useEffect(() => {
     if (lat === undefined || lng === undefined) return;
-    
+
     let active = true;
     const getMun = async () => {
       setIsLoadingMunicipality(true);
@@ -63,7 +65,7 @@ export const EventModal: React.FC<EventModalProps> = ({
       if (active) {
         setMunicipality(m);
         setIsLoadingMunicipality(false);
-        
+
         if (userMunicipality && m) {
           const normM = normalizeString(m);
           const normU = normalizeString(userMunicipality);
@@ -85,7 +87,7 @@ export const EventModal: React.FC<EventModalProps> = ({
       alert("Por favor, selecione ou crie um tipo de evento.");
       return;
     }
-    
+
     if (userMunicipality && municipality) {
       const normM = normalizeString(municipality);
       const normU = normalizeString(userMunicipality);
@@ -94,7 +96,7 @@ export const EventModal: React.FC<EventModalProps> = ({
         return;
       }
     }
-    
+
     let finalLat = parseFloat(formLat);
     let finalLng = parseFloat(formLng);
 
@@ -106,7 +108,7 @@ export const EventModal: React.FC<EventModalProps> = ({
       setIsSaving(true);
       const coords = await geocodeMunicipality(municipality);
       setIsSaving(false);
-      
+
       if (coords) {
         finalLat = coords.lat;
         finalLng = coords.lng;
@@ -115,10 +117,12 @@ export const EventModal: React.FC<EventModalProps> = ({
         return;
       }
     }
-    
+
     onSave({
       id: uuidv4(),
       event_type_id: typeId,
+      severity,
+      status,
       date,
       time,
       observation,
@@ -145,15 +149,15 @@ export const EventModal: React.FC<EventModalProps> = ({
             <h2 style={{ marginBottom: '15px', color: '#ef4444' }}>Acesso Restrito</h2>
             <p style={{ marginBottom: '20px', fontSize: '1.1rem' }}>
               Seu perfil (Cidadão) permite incluir eventos apenas no seu município.
-              <br/><br/>
+              <br /><br />
               <strong>Seu município:</strong> {userMunicipality}
-              <br/>
+              <br />
               <strong>Município clicado:</strong> {municipality}
             </p>
             <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <button 
-                type="button" 
-                className="btn-outline" 
+              <button
+                type="button"
+                className="btn-outline"
                 onClick={onClose}
                 style={{ padding: '10px 30px' }}
               >
@@ -163,140 +167,167 @@ export const EventModal: React.FC<EventModalProps> = ({
           </div>
         ) : (
           <form onSubmit={handleSave}>
-          <div className="modal-header">
-            <h2>Registrar Evento Crítico</h2>
-            <button type="button" className="close-btn" onClick={onClose}>
-              <X size={20} />
-            </button>
-          </div>
-          
-          <div className="modal-body">
-            <div className="form-group">
-              <label>Tipo de Evento</label>
-              {!isCreatingType ? (
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <select 
-                    value={typeId} 
-                    onChange={(e) => setTypeId(e.target.value)}
+            <div className="modal-header">
+              <h2>Registrar Evento Crítico</h2>
+              <button type="button" className="close-btn" onClick={onClose}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <div className="form-group">
+                <label>Tipo de Evento</label>
+                {!isCreatingType ? (
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <select
+                      value={typeId}
+                      onChange={(e) => setTypeId(e.target.value)}
+                      required
+                    >
+                      <option value="" disabled>Selecione um tipo...</option>
+                      {availableTypes.map((t) => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      className="btn-outline"
+                      onClick={() => setIsCreatingType(true)}
+                      title="Novo Tipo"
+                    >
+                      <Plus size={18} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="add-type-container">
+                    <input
+                      type="text"
+                      placeholder="Nome do novo tipo..."
+                      value={newTypeName}
+                      onChange={(e) => setNewTypeName(e.target.value)}
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      onClick={handleAddType}
+                    >
+                      Salvar
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-outline"
+                      onClick={() => setIsCreatingType(false)}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label>Gravidade</label>
+                <select
+                  value={severity}
+                  onChange={(e) => setSeverity(e.target.value as EventSeverity)}
+                  required
+                >
+                  <option value="Baixa">Baixa</option>
+                  <option value="Média">Média</option>
+                  <option value="Alta">Alta</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Status</label>
+                <input
+                  type="text"
+                  value={status}
+                  disabled
+                  style={{
+                    backgroundColor: '#f1f5f9',
+                    cursor: 'not-allowed',
+                    color: 'var(--text-secondary)'
+                  }}
+                />
+              </div>
+
+              <div className="date-time-row">
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label>Data</label>
+                  <input
+                    type="date"
                     required
-                  >
-                    <option value="" disabled>Selecione um tipo...</option>
-                    {availableTypes.map((t) => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
-                    ))}
-                  </select>
-                  <button 
-                    type="button" 
-                    className="btn-outline" 
-                    onClick={() => setIsCreatingType(true)}
-                    title="Novo Tipo"
-                  >
-                    <Plus size={18} />
-                  </button>
-                </div>
-              ) : (
-                <div className="add-type-container">
-                  <input 
-                    type="text" 
-                    placeholder="Nome do novo tipo..." 
-                    value={newTypeName}
-                    onChange={(e) => setNewTypeName(e.target.value)}
-                    autoFocus
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
                   />
-                  <button 
-                    type="button" 
-                    className="btn-primary" 
-                    onClick={handleAddType}
-                  >
-                    Salvar
-                  </button>
-                  <button 
-                    type="button" 
-                    className="btn-outline" 
-                    onClick={() => setIsCreatingType(false)}
-                  >
-                    Cancelar
-                  </button>
                 </div>
-              )}
-            </div>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label>Horário</label>
+                  <input
+                    type="time"
+                    required
+                    value={time}
+                    onChange={(e) => setTime(e.target.value)}
+                  />
+                </div>
+              </div>
 
-            <div className="date-time-row">
-              <div className="form-group" style={{ flex: 1 }}>
-                <label>Data</label>
-                <input 
-                  type="date" 
-                  required 
-                  value={date} 
-                  onChange={(e) => setDate(e.target.value)}
+              <div className="form-group">
+                <label>Município</label>
+                <input
+                  type="text"
+                  required
+                  value={municipality}
+                  onChange={(e) => setMunicipality(e.target.value)}
+                  disabled={!!userMunicipality}
+                  placeholder={isLoadingMunicipality ? "Buscando localização..." : "Digite o município"}
+                  className={isLoadingMunicipality ? "loading-pulse" : ""}
+                  style={userMunicipality ? { backgroundColor: '#f1f5f9', cursor: 'not-allowed', color: 'var(--text-secondary)' } : {}}
                 />
               </div>
-              <div className="form-group" style={{ flex: 1 }}>
-                <label>Horário</label>
-                <input 
-                  type="time" 
-                  required 
-                  value={time} 
-                  onChange={(e) => setTime(e.target.value)}
+
+              <div className="date-time-row">
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label>Latitude</label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={formLat}
+                    onChange={(e) => setFormLat(e.target.value)}
+                    placeholder="Ex: -23.5505"
+                  />
+                </div>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label>Longitude</label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={formLng}
+                    onChange={(e) => setFormLng(e.target.value)}
+                    placeholder="Ex: -46.6333"
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Observação</label>
+                <textarea
+                  rows={3}
+                  value={observation}
+                  onChange={(e) => setObservation(e.target.value)}
+                  placeholder="Detalhes adicionais do evento..."
                 />
               </div>
             </div>
 
-            <div className="form-group">
-              <label>Município</label>
-              <input 
-                type="text" 
-                required 
-                value={municipality} 
-                onChange={(e) => setMunicipality(e.target.value)}
-                disabled={!!userMunicipality}
-                placeholder={isLoadingMunicipality ? "Buscando localização..." : "Digite o município"}
-                className={isLoadingMunicipality ? "loading-pulse" : ""}
-                style={userMunicipality ? { backgroundColor: '#f1f5f9', cursor: 'not-allowed', color: 'var(--text-secondary)' } : {}}
-              />
+            <div className="modal-footer">
+              <button type="button" className="btn-outline" onClick={onClose} disabled={isSaving}>Cancelar</button>
+              <button type="submit" className="btn-primary" disabled={isSaving}>
+                {isSaving ? 'Buscando Localização...' : 'Salvar Evento'}
+              </button>
             </div>
-
-            <div className="date-time-row">
-              <div className="form-group" style={{ flex: 1 }}>
-                <label>Latitude</label>
-                <input 
-                  type="number" 
-                  step="any"
-                  value={formLat} 
-                  onChange={(e) => setFormLat(e.target.value)}
-                  placeholder="Ex: -23.5505"
-                />
-              </div>
-              <div className="form-group" style={{ flex: 1 }}>
-                <label>Longitude</label>
-                <input 
-                  type="number" 
-                  step="any"
-                  value={formLng} 
-                  onChange={(e) => setFormLng(e.target.value)}
-                  placeholder="Ex: -46.6333"
-                />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label>Observação</label>
-              <textarea 
-                rows={3} 
-                value={observation} 
-                onChange={(e) => setObservation(e.target.value)}
-                placeholder="Detalhes adicionais do evento..."
-              />
-            </div>
-          </div>
-
-          <div className="modal-footer">
-            <button type="button" className="btn-outline" onClick={onClose} disabled={isSaving}>Cancelar</button>
-            <button type="submit" className="btn-primary" disabled={isSaving}>
-              {isSaving ? 'Buscando Localização...' : 'Salvar Evento'}
-            </button>
-          </div>
-        </form>
+          </form>
         )}
       </div>
     </div>

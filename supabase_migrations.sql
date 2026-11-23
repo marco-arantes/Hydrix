@@ -11,3 +11,20 @@ WHERE e.type = et.name;
 -- você pode apagar a coluna 'type' de texto antiga para limpar o banco.
 -- Descomente a linha abaixo quando tiver certeza:
 -- ALTER TABLE public.events DROP COLUMN type;
+
+-- 4. Adicionar coluna 'severity' (Gravidade) na tabela 'events' com padrão 'Baixa'
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS severity TEXT DEFAULT 'Baixa' CHECK (severity IN ('Baixa', 'Média', 'Alta'));
+UPDATE public.events SET severity = 'Baixa' WHERE severity IS NULL;
+
+-- 5. Política para permitir que usuários com nível diferente de CIDADÃO (ex: ADMIN, GESTOR) alterem a gravidade dos eventos
+CREATE POLICY "Allow non-citizens to update events" ON public.events
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM public.user_roles 
+      WHERE user_roles.id = auth.uid() AND user_roles.role != 'CIDADÃO'
+    )
+  );
+
+-- 6. Adicionar coluna 'status' (Status) na tabela 'events' com padrão 'Aberto'
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'Aberto' CHECK (status IN ('Aberto', 'Em Atendimento', 'Resolvido'));
+UPDATE public.events SET status = 'Aberto' WHERE status IS NULL;
