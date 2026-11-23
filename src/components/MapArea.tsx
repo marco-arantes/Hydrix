@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, GeoJSON, WMSTileLayer } from 'react-leaflet';
 import L from 'leaflet';
 import type { MarkerEvent, EventSeverity, EventStatus } from '../types';
 import { fetchMunicipality } from '../utils/reverseGeocode';
 import { getIbgeDataByMunicipalityName } from '../utils/ibge';
+import { getEventColor } from '../utils/eventColors';
 
 // Fix for leaflet internal icon missing issues in some environments
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -18,8 +19,35 @@ let DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
+// Função geradora de ícones SVG personalizados coloridos por tipo de evento
+export function createCustomMarkerIcon(color: string) {
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36" width="28" height="42">
+      <defs>
+        <filter id="shadow" x="-20%" y="-10%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.35"/>
+        </filter>
+      </defs>
+      <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 24 12 24s12-15 12-24c0-6.627-5.373-12-12-12z" 
+            fill="${color}" 
+            stroke="#ffffff" 
+            stroke-width="1.8" 
+            filter="url(#shadow)"/>
+      <circle cx="12" cy="11.5" r="4.5" fill="#ffffff" />
+    </svg>
+  `;
+  return L.divIcon({
+    html: svg,
+    className: 'custom-color-marker',
+    iconSize: [28, 42],
+    iconAnchor: [14, 42],
+    popupAnchor: [0, -38]
+  });
+}
+
 interface MapAreaProps {
   markers: MarkerEvent[];
+  availableTypes?: { id: string, name: string }[];
   onMapClick: (lat: number, lng: number) => void;
   showUgrhi4: boolean;
   isInsertMode: boolean;
@@ -143,13 +171,27 @@ const MapLocker: React.FC<{ lockedPath: string, onFound: (name: string, geojson:
 };
 
 export const MapArea: React.FC<MapAreaProps> = ({
-  markers, onMapClick, showUgrhi4, isInsertMode,
+  markers, availableTypes, onMapClick, showUgrhi4, isInsertMode,
   selectedMunicipality, setSelectedMunicipality,
   mapLayer, showBiomas, showVegetation, showBaciasIbge, showMeso, baciaHeatmap, activeBacias, onDeleteMarker, onUpdateSeverity, onUpdateStatus, lockedCityPath
 }) => {
   // Centro aproximado da Bacia do Pardo (UGRHI-4), perto de Ribeirão Preto
   const defaultCenter: [number, number] = [-21.1, -47.8];
   const zoomLevel = 8;
+
+  const [isLegendOpen, setIsLegendOpen] = useState(true);
+
+  // Tipos para a legenda (ou do banco ou únicos dos marcadores presentes)
+  const legendTypes = useMemo(() => {
+    if (availableTypes && availableTypes.length > 0) {
+      return availableTypes.map(t => t.name).sort((a, b) => a.localeCompare(b));
+    }
+    const setOfTypes = new Set<string>();
+    markers.forEach(m => {
+      if (m.event_type_name) setOfTypes.add(m.event_type_name);
+    });
+    return Array.from(setOfTypes).sort((a, b) => a.localeCompare(b));
+  }, [availableTypes, markers]);
 
   const fetched = useRef(new Set<string>());
   const [boundaries, setBoundaries] = useState<Record<string, any>>({});
@@ -455,121 +497,211 @@ export const MapArea: React.FC<MapAreaProps> = ({
           />
         )}
 
-        {markers.map((marker) => (
-          <Marker
-            key={marker.id}
-            position={[marker.lat, marker.lng]}
-            eventHandlers={{
-              click: () => setSelectedMunicipality(marker.municipality)
+        {markers.map((marker) => {
+          const markerColor = getEventColor(marker.event_type_name);
+          const customIcon = createCustomMarkerIcon(markerColor);
+
+          return (
+            <Marker
+              key={marker.id}
+              position={[marker.lat, marker.lng]}
+              icon={customIcon}
+              eventHandlers={{
+                click: () => setSelectedMunicipality(marker.municipality)
+              }}
+            >
+              <Popup>
+                <div style={{ padding: '4px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <span 
+                      style={{ 
+                        width: '12px', 
+                        height: '12px', 
+                        borderRadius: '50%', 
+                        backgroundColor: markerColor, 
+                        display: 'inline-block',
+                        flexShrink: 0
+                      }} 
+                    />
+                    <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--primary-color)' }}>
+                      {marker.event_type_name || 'Desconhecido'}
+                    </h3>
+                  </div>
+                  <p style={{ margin: '4px 0', fontSize: '0.875rem' }}>
+                    <strong>Data:</strong> {marker.date ? marker.date.split('-').reverse().join('/') : ''} às {marker.time}
+                  </p>
+                  <p style={{ margin: '4px 0', fontSize: '0.875rem' }}>
+                    <strong>Local:</strong> {marker.municipality}
+                  </p>
+                  <p style={{ margin: '4px 0', fontSize: '0.875rem' }}>
+                    <strong>Coordenadas:</strong> {marker.lat.toFixed(5)}, {marker.lng.toFixed(5)}
+                  </p>
+                  <div style={{ margin: '6px 0', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                    <strong>Gravidade:</strong>
+                    {onUpdateSeverity ? (
+                      <>
+                        <select
+                          value={editingSeverities[marker.id] ?? (marker.severity || 'Baixa')}
+                          onChange={(e) => {
+                            const val = e.target.value as EventSeverity;
+                            setEditingSeverities(prev => ({ ...prev, [marker.id]: val }));
+                          }}
+                          style={{ padding: '4px 6px', fontSize: '0.8rem', borderRadius: '4px', border: '1px solid #cbd5e1', width: 'auto' }}
+                        >
+                          <option value="Baixa">Baixa</option>
+                          <option value="Média">Média</option>
+                          <option value="Alta">Alta</option>
+                        </select>
+                        <button
+                          type="button"
+                          disabled={savingSeverityId === marker.id}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            const newSev = editingSeverities[marker.id] ?? (marker.severity || 'Baixa');
+                            setSavingSeverityId(marker.id);
+                            await onUpdateSeverity(marker.id, newSev);
+                            setSavingSeverityId(null);
+                          }}
+                          style={{ padding: '4px 8px', backgroundColor: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}
+                        >
+                          {savingSeverityId === marker.id ? 'Salvando...' : 'Salvar'}
+                        </button>
+                      </>
+                    ) : (
+                      <span>{marker.severity || 'Baixa'}</span>
+                    )}
+                  </div>
+                  <div style={{ margin: '6px 0', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                    <strong>Status:</strong>
+                    {onUpdateStatus ? (
+                      <>
+                        <select
+                          value={editingStatuses[marker.id] ?? (marker.status || 'Aberto')}
+                          onChange={(e) => {
+                            const val = e.target.value as EventStatus;
+                            setEditingStatuses(prev => ({ ...prev, [marker.id]: val }));
+                          }}
+                          style={{ padding: '4px 6px', fontSize: '0.8rem', borderRadius: '4px', border: '1px solid #cbd5e1', width: 'auto' }}
+                        >
+                          <option value="Aberto">Aberto</option>
+                          <option value="Em Atendimento">Em Atendimento</option>
+                          <option value="Resolvido">Resolvido</option>
+                        </select>
+                        <button
+                          type="button"
+                          disabled={savingStatusId === marker.id}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            const newStat = editingStatuses[marker.id] ?? (marker.status || 'Aberto');
+                            setSavingStatusId(marker.id);
+                            await onUpdateStatus(marker.id, newStat);
+                            setSavingStatusId(null);
+                          }}
+                          style={{ padding: '4px 8px', backgroundColor: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}
+                        >
+                          {savingStatusId === marker.id ? 'Salvando...' : 'Salvar'}
+                        </button>
+                      </>
+                    ) : (
+                      <span>{marker.status || 'Aberto'}</span>
+                    )}
+                  </div>
+                  {marker.observation && (
+                    <p style={{ margin: '8px 0 0 0', fontSize: '0.875rem', fontStyle: 'italic', color: 'var(--text-secondary)' }}>
+                      "{marker.observation}"
+                    </p>
+                  )}
+                  {onDeleteMarker && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm('Tem certeza que deseja excluir este evento?')) {
+                          onDeleteMarker(marker.id);
+                        }
+                      }}
+                      style={{ marginTop: '12px', padding: '6px 10px', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', width: '100%', fontWeight: 600 }}
+                    >
+                      Excluir Evento
+                    </button>
+                  )}
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
+      </MapContainer>
+
+      {/* Legenda de Tipos de Eventos */}
+      {legendTypes.length > 0 && (
+        <div style={{
+          position: 'absolute',
+          bottom: '24px',
+          left: '20px',
+          zIndex: 1000,
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(6px)',
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+          border: '1px solid #cbd5e1',
+          width: '240px',
+          maxHeight: '340px',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          fontFamily: 'Inter, sans-serif'
+        }}>
+          <div 
+            onClick={() => setIsLegendOpen(!isLegendOpen)}
+            style={{
+              padding: '10px 14px',
+              backgroundColor: '#f8fafc',
+              borderBottom: isLegendOpen ? '1px solid #e2e8f0' : 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              userSelect: 'none'
             }}
           >
-            <Popup>
-              <div style={{ padding: '4px' }}>
-                <h3 style={{ margin: '0 0 8px 0', fontSize: '1rem', color: 'var(--primary-color)' }}>
-                  {marker.event_type_name || 'Desconhecido'}
-                </h3>
-                <p style={{ margin: '4px 0', fontSize: '0.875rem' }}>
-                  <strong>Data:</strong> {marker.date ? marker.date.split('-').reverse().join('/') : ''} às {marker.time}
-                </p>
-                <p style={{ margin: '4px 0', fontSize: '0.875rem' }}>
-                  <strong>Local:</strong> {marker.municipality}
-                </p>
-                <p style={{ margin: '4px 0', fontSize: '0.875rem' }}>
-                  <strong>Coordenadas:</strong> {marker.lat.toFixed(5)}, {marker.lng.toFixed(5)}
-                </p>
-                <div style={{ margin: '6px 0', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                  <strong>Gravidade:</strong>
-                  {onUpdateSeverity ? (
-                    <>
-                      <select
-                        value={editingSeverities[marker.id] ?? (marker.severity || 'Baixa')}
-                        onChange={(e) => {
-                          const val = e.target.value as EventSeverity;
-                          setEditingSeverities(prev => ({ ...prev, [marker.id]: val }));
-                        }}
-                        style={{ padding: '4px 6px', fontSize: '0.8rem', borderRadius: '4px', border: '1px solid #cbd5e1', width: 'auto' }}
-                      >
-                        <option value="Baixa">Baixa</option>
-                        <option value="Média">Média</option>
-                        <option value="Alta">Alta</option>
-                      </select>
-                      <button
-                        type="button"
-                        disabled={savingSeverityId === marker.id}
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          const newSev = editingSeverities[marker.id] ?? (marker.severity || 'Baixa');
-                          setSavingSeverityId(marker.id);
-                          await onUpdateSeverity(marker.id, newSev);
-                          setSavingSeverityId(null);
-                        }}
-                        style={{ padding: '4px 8px', backgroundColor: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}
-                      >
-                        {savingSeverityId === marker.id ? 'Salvando...' : 'Salvar'}
-                      </button>
-                    </>
-                  ) : (
-                    <span>{marker.severity || 'Baixa'}</span>
-                  )}
-                </div>
-                <div style={{ margin: '6px 0', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                  <strong>Status:</strong>
-                  {onUpdateStatus ? (
-                    <>
-                      <select
-                        value={editingStatuses[marker.id] ?? (marker.status || 'Aberto')}
-                        onChange={(e) => {
-                          const val = e.target.value as EventStatus;
-                          setEditingStatuses(prev => ({ ...prev, [marker.id]: val }));
-                        }}
-                        style={{ padding: '4px 6px', fontSize: '0.8rem', borderRadius: '4px', border: '1px solid #cbd5e1', width: 'auto' }}
-                      >
-                        <option value="Aberto">Aberto</option>
-                        <option value="Em Atendimento">Em Atendimento</option>
-                        <option value="Resolvido">Resolvido</option>
-                      </select>
-                      <button
-                        type="button"
-                        disabled={savingStatusId === marker.id}
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          const newStat = editingStatuses[marker.id] ?? (marker.status || 'Aberto');
-                          setSavingStatusId(marker.id);
-                          await onUpdateStatus(marker.id, newStat);
-                          setSavingStatusId(null);
-                        }}
-                        style={{ padding: '4px 8px', backgroundColor: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}
-                      >
-                        {savingStatusId === marker.id ? 'Salvando...' : 'Salvar'}
-                      </button>
-                    </>
-                  ) : (
-                    <span>{marker.status || 'Aberto'}</span>
-                  )}
-                </div>
-                {marker.observation && (
-                  <p style={{ margin: '8px 0 0 0', fontSize: '0.875rem', fontStyle: 'italic', color: 'var(--text-secondary)' }}>
-                    "{marker.observation}"
-                  </p>
-                )}
-                {onDeleteMarker && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (window.confirm('Tem certeza que deseja excluir este evento?')) {
-                        onDeleteMarker(marker.id);
-                      }
-                    }}
-                    style={{ marginTop: '12px', padding: '6px 10px', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', width: '100%', fontWeight: 600 }}
-                  >
-                    Excluir Evento
-                  </button>
-                )}
-              </div>
-            </Popup>
-          </Marker>
-        ))}
-      </MapContainer>
+            <span style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b' }}>
+              Legenda de Eventos
+            </span>
+            <span style={{ fontSize: '12px', color: '#64748b' }}>
+              {isLegendOpen ? '▲' : '▼'}
+            </span>
+          </div>
+
+          {isLegendOpen && (
+            <div style={{
+              padding: '10px 14px',
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '7px'
+            }}>
+              {legendTypes.map(typeName => {
+                const color = getEventColor(typeName);
+                return (
+                  <div key={typeName} style={{ display: 'flex', alignItems: 'center', gap: '9px', fontSize: '12px', color: '#334155' }}>
+                    <span style={{
+                      width: '14px',
+                      height: '14px',
+                      borderRadius: '50%',
+                      backgroundColor: color,
+                      border: '2px solid #ffffff',
+                      boxShadow: '0 0 0 1px #94a3b8',
+                      flexShrink: 0
+                    }} />
+                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={typeName}>
+                      {typeName}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {baciaHeatmap !== 'none' && showBaciasIbge && (
         <div style={{ position: 'absolute', bottom: '30px', right: '30px', zIndex: 1000, backgroundColor: 'white', padding: '12px', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', fontFamily: 'Inter, sans-serif' }}>

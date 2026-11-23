@@ -438,6 +438,7 @@ function App() {
 
             <MapArea
               markers={filteredMarkers}
+              availableTypes={availableTypes}
               onMapClick={handleMapClick}
               onDeleteMarker={canDelete ? handleDeleteMarker : undefined}
               onUpdateSeverity={canEditSeverity ? handleUpdateSeverity : undefined}
